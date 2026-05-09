@@ -1,0 +1,16 @@
+# Dependencies
+node_modules/
+
+# Environment variables and secrets
+.env
+
+# Build output
+dist/
+build/
+
+# Mac system files
+.DS_Store
+
+# Local learning notes
+DAY_*_NOTES.md
+DEVELOPMENT_RULES.md

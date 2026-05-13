@@ -17,6 +17,84 @@ async function connectDB() {
 }
 
 connectDB();
+function predictSeverity(description) {
+  const text = description.toLowerCase();
+
+  const rules = [
+    {
+      severity: "Critical",
+      score: 90,
+      keywords: [
+        "unconscious",
+        "not moving",
+        "hit by car",
+        "hit by bike",
+        "accident",
+        "heavy bleeding",
+        "fracture",
+        "broken leg",
+        "dying",
+      ],
+    },
+    {
+      severity: "High",
+      score: 70,
+      keywords: [
+        "bleeding",
+        "deep wound",
+        "infected",
+        "maggots",
+        "unable to walk",
+        "burn",
+        "severe pain",
+      ],
+    },
+    {
+      severity: "Medium",
+      score: 45,
+      keywords: [
+        "limping",
+        "small wound",
+        "weak",
+        "swelling",
+        "skin problem",
+        "injured",
+      ],
+    },
+    {
+      severity: "Low",
+      score: 20,
+      keywords: [
+        "hungry",
+        "abandoned",
+        "minor injury",
+        "lost",
+        "needs food",
+      ],
+    },
+  ];
+
+  for (const rule of rules) {
+    const matchedKeywords = rule.keywords.filter((keyword) =>
+      text.includes(keyword)
+    );
+
+    if (matchedKeywords.length > 0) {
+      return {
+        severity: rule.severity,
+        severityScore: rule.score,
+        severityReasons: matchedKeywords,
+      };
+    }
+  }
+
+  return {
+    severity: "Low",
+    severityScore: 20,
+    severityReasons: ["No high-risk injury keywords found"],
+  };
+}
+
 
 
 const app = express();
@@ -35,12 +113,18 @@ app.get("/api/health", (req, res) => {
 
 app.post("/api/reports", async (req, res) => {
   try {
-    const report = await Report.create({
-      animalType: req.body.animalType,
-      injuryDescription: req.body.injuryDescription,
-      location: req.body.location,
-      contactNumber: req.body.contactNumber,
-    });
+const severityPrediction = predictSeverity(req.body.injuryDescription);
+
+const report = await Report.create({
+  animalType: req.body.animalType,
+  injuryDescription: req.body.injuryDescription,
+  location: req.body.location,
+  contactNumber: req.body.contactNumber,
+  severity: severityPrediction.severity,
+  severityScore: severityPrediction.severityScore,
+  severityReasons: severityPrediction.severityReasons,
+});
+
 
     res.status(201).json({
       message: "Report submitted successfully",

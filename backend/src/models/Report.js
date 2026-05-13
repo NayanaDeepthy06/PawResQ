@@ -27,6 +27,19 @@ const reportSchema = new mongoose.Schema(
       enum: ["Pending", "Accepted", "Rescued", "Closed"],
       default: "Pending",
     },
+    severity: {
+  type: String,
+  enum: ["Low", "Medium", "High", "Critical"],
+  default: "Low",
+},
+  severityScore: {
+    type: Number,
+    default: 20,
+  },
+  severityReasons: {
+    type: [String],
+    default: [],
+  },
   },
   {
     timestamps: true,

@@ -196,6 +196,17 @@ async function handleSubmit(event) {
         <strong>Status:</strong> {submittedReport.status}
       </p>
       <p>
+        <strong>Predicted Severity:</strong> {submittedReport.severity}
+      </p>
+      <p>
+        <strong>Severity Score:</strong> {submittedReport.severityScore}
+      </p>
+      <p>
+        <strong>Prediction Reasons:</strong>{" "}
+        {submittedReport.severityReasons?.join(", ")}
+      </p>
+
+      <p>
         <strong>Report ID:</strong> {submittedReport.id}
       </p>
       <p>

@@ -36,8 +36,11 @@ const initialReport = {
 
 function App() {
   const [report, setReport] = useState(initialReport);
+  const [imagePreview, setImagePreview] = useState(null);
   const [submittedReport, setSubmittedReport] = useState(null);
-
+  const [submissionSuccess, setSubmissionSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState("");
   function handleChange(event) {
   const { name, value } = event.target;
 
@@ -50,14 +53,78 @@ function App() {
 function handleImageChange(event) {
   const selectedFile = event.target.files[0];
 
+  if (!selectedFile) {
+  return;
+}
+  if (!selectedFile.type.startsWith("image/")) {
+  setFormError("Only image files are allowed.");
+  setImagePreview(null);
+
+      setReport((currentReport) => ({
+        ...currentReport,
+        image: null,
+      }));
+  return;
+}
+
+if (selectedFile.size > 5 * 1024 * 1024) {
+  setFormError("Image size must be below 5MB.");
+  setImagePreview(null);
+
+    setReport((currentReport) => ({
+      ...currentReport,
+      image: null,
+    }));
+  return;
+}
+
+setFormError("");
+
+  if (selectedFile) {
+    setReport((currentReport) => ({
+      ...currentReport,
+      image: selectedFile,
+    }));
+
+    setImagePreview(URL.createObjectURL(selectedFile));
+  }
+}
+
+function handleRemoveImage() {
   setReport((currentReport) => ({
     ...currentReport,
-    image: selectedFile,
+    image: null,
   }));
+
+  setImagePreview(null);
 }
 
 async function handleSubmit(event) {
   event.preventDefault();
+if (
+  !report.animalType ||
+  !report.injuryDescription ||
+  !report.location ||
+  !report.contactNumber
+) {
+  setFormError("Please fill all required fields.");
+  return;
+}
+
+if (report.contactNumber.length < 10) {
+  setFormError("Please enter a valid contact number.");
+  return;
+}
+
+if (report.injuryDescription.trim().length < 15) {
+  setFormError(
+    "Please provide a more detailed injury description."
+  );
+  return;
+}
+
+   setFormError("");
+  setIsSubmitting(true);
 
   const reportPayload = {
     animalType: report.animalType,
@@ -66,19 +133,94 @@ async function handleSubmit(event) {
     contactNumber: report.contactNumber,
   };
 
-  const response = await fetch("http://localhost:5001/api/reports", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(reportPayload),
-  });
+  try {
+      const controller = new AbortController();
+
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+      }, 10000);
+    const response = await fetch(
+      "http://localhost:5001/api/reports",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(reportPayload),
+        signal: controller.signal,
+      }
+    );
 
   const data = await response.json();
+  clearTimeout(timeoutId);
 
   setSubmittedReport(data.report);
+  setSubmissionSuccess(true);
+  setFormError("");
+} catch (error) {
+  setFormError(
+    "Unable to submit rescue report. Please try again."
+  );
+} finally {
+  setIsSubmitting(false);
+}
 }
 
+function getSeverityClass(severity) {
+  switch (severity) {
+    case "Critical":
+      return "severity-critical";
+
+    case "High":
+      return "severity-high";
+
+    case "Medium":
+      return "severity-medium";
+
+    default:
+      return "severity-low";
+  }
+}
+
+function getPriorityClass(priorityLevel) {
+  switch (priorityLevel) {
+    case "Emergency":
+      return "priority-emergency";
+
+    case "Urgent":
+      return "priority-urgent";
+
+    case "Important":
+      return "priority-important";
+
+    default:
+      return "priority-routine";
+  }
+}
+
+function getStatusClass(status) {
+  switch (status) {
+    case "Accepted":
+      return "status-accepted";
+
+    case "Rescued":
+      return "status-rescued";
+
+    case "Closed":
+      return "status-closed";
+
+    default:
+      return "status-pending";
+  }
+}
+
+function formatDate(dateString) {
+  const date = new Date(dateString);
+  return date.toLocaleString("en-IN", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+}
 
   return (
     <main className="app-container">
@@ -157,68 +299,194 @@ async function handleSubmit(event) {
               />
             </label>
 
-            <label>
+          <label className="image-upload-field">
               Animal Image
+
               <input
                 type="file"
                 accept="image/*"
                 onChange={handleImageChange}
-                required
               />
-            </label>
 
-            <button className="submit-button" type="submit">
-              Submit Rescue Report
+              {imagePreview && (
+                <div className="image-preview-container">
+                  <img
+                    src={imagePreview}
+                    alt="Animal Preview"
+                    className="animal-preview-image"
+                  />
+                  <button
+                        type="button"
+                        className="remove-image-button"
+                        onClick={handleRemoveImage}
+                      >
+                        Remove Image
+                      </button>
+                </div>
+              )}
+            </label>
+            {formError && (
+              <div className="form-error">
+                {formError}
+              </div>
+            )}
+
+            <button
+              className="submit-button"
+              type="submit"
+              disabled={isSubmitting}
+            >
+              {isSubmitting
+                ? "Processing Rescue Report..."
+                : "Submit Rescue Report"}
             </button>
+         
           </form>
 
   {submittedReport && (
-  <section className="report-preview">
+  <>
+    {submissionSuccess && (
+      <div className="success-banner">
+        <h3>✅ Rescue Report Submitted Successfully</h3>
+
+        <p>
+          PawResQ has registered this case and prepared it for
+          rescue coordination workflow.
+        </p>
+      </div>
+    )}
+
+    <section className="report-preview">
     <div className="form-header">
       <h2>Submitted Report Preview</h2>
-      <p>This preview shows the form data currently stored in React state.</p>
+      <p>
+        PawResQ has analyzed this rescue report and generated an AI-assisted
+        severity and priority assessment for rescue coordination.
+      </p>
+    </div>
+      {submittedReport.priorityLevel === "Emergency" && (
+        <div className="emergency-alert">
+          <h3>🚨 Emergency Rescue Required</h3>
+
+          <p>
+            This case has been classified as high priority and may require
+            immediate NGO or volunteer intervention.
+          </p>
+        </div>
+      )}
+            <div className="details-group">
+          <h3 className="group-title">Animal Information</h3>
+
+          <div className="detail-item">
+              <span className="detail-key">Animal</span>
+              <span>{submittedReport.animalType}</span>
+          </div>
+
+          <div className="detail-item">
+              <span className="detail-key">Description</span>
+              <span>{submittedReport.injuryDescription}</span>
+          </div>
+
+          <div className="detail-item">
+              <span className="detail-key">Location</span>
+              <span>{submittedReport.location}</span>
+          </div>
+
+          <div className="detail-item">
+              <span className="detail-key">Contact</span>
+              <span>{submittedReport.contactNumber}</span>
+          </div>
+
+          <div className="detail-item">
+              <span className="detail-key">Status</span>
+
+              <span
+                className={`status-badge ${getStatusClass(
+                  submittedReport.status
+                )}`}
+              >
+                {submittedReport.status}
+              </span>
+            </div>
+        </div>
+     <div className="assessment-card">
+  <h3 className="group-title">AI Rescue Assessment</h3>
+
+  <div className="assessment-content">
+
+    <div className="severity-section">
+      <span className="detail-label">Predicted Severity</span>
+
+      <span
+        className={`severity-badge ${getSeverityClass(
+          submittedReport.severity
+        )}`}
+      >
+        {submittedReport.severity}
+      </span>
+
+      <p className="priority-score">
+        Severity Score: {submittedReport.severityScore}
+      </p>
     </div>
 
-    <div className="preview-details">
-      <p>
-        <strong>Animal:</strong> {submittedReport.animalType}
+    <div className="priority-section">
+      <span className="detail-label">Priority Level</span>
+
+      <span
+        className={`priority-badge ${getPriorityClass(
+          submittedReport.priorityLevel
+        )}`}
+      >
+        {submittedReport.priorityLevel}
+      </span>
+
+      <p className="priority-score">
+        Priority Score: {submittedReport.priorityScore}
       </p>
-      <p>
-        <strong>Description:</strong> {submittedReport.injuryDescription}
-      </p>
-      <p>
-        <strong>Location:</strong> {submittedReport.location}
-      </p>
-      <p>
-        <strong>Contact:</strong> {submittedReport.contactNumber}
-      </p>
-      <p>
-        <strong>Status:</strong> {submittedReport.status}
-      </p>
-      <p>
-        <strong>Predicted Severity:</strong> {submittedReport.severity}
-      </p>
-      <p>
-        <strong>Severity Score:</strong> {submittedReport.severityScore}
-      </p>
+    </div>
+
+    <div>
       <p>
         <strong>Prediction Reasons:</strong>{" "}
         {submittedReport.severityReasons?.join(", ")}
       </p>
-
-      <p>
-        <strong>Report ID:</strong> {submittedReport.id}
-      </p>
-      <p>
-        <strong>Created At:</strong> {submittedReport.createdAt}
-      </p>
-
-      <p>
-        <strong>Image:</strong>{" "}
-        {submittedReport.image ? submittedReport.image.name : "No image selected"}
-      </p>
     </div>
-  </section>
+
+      </div>
+   </div>
+    
+    <div className="metadata-card">
+        <h3 className="group-title">Case Metadata</h3>
+
+        <div className="detail-item">
+          <span className="detail-key">Report ID</span>
+          <span>{submittedReport._id}</span>
+        </div>
+
+        <div className="detail-item">
+          <span className="detail-key">Created At</span>
+         <span>{formatDate(submittedReport.createdAt)}</span>
+        </div>
+
+       <div className="metadata-image-section">
+          <span className="detail-key">Uploaded Animal Image</span>
+
+          {imagePreview ? (
+            <img
+              src={imagePreview}
+              alt="Uploaded animal"
+              className="metadata-image"
+            />
+          ) : (
+            <p>No image selected</p>
+          )}
+        </div>
+   </div>
+    
+   
+</section>
+  </>
 )}
 
   <div className="feature-grid">

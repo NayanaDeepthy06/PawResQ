@@ -95,6 +95,35 @@ function predictSeverity(description) {
   };
 }
 
+function calculatePriority(severityScore) {
+  if (severityScore >= 85) {
+    return {
+      priorityScore: 95,
+      priorityLevel: "Emergency",
+    };
+  }
+
+  if (severityScore >= 65) {
+    return {
+      priorityScore: 75,
+      priorityLevel: "Urgent",
+    };
+  }
+
+  if (severityScore >= 40) {
+    return {
+      priorityScore: 50,
+      priorityLevel: "Important",
+    };
+  }
+
+  return {
+    priorityScore: 25,
+    priorityLevel: "Routine",
+  };
+}
+
+
 
 
 const app = express();
@@ -114,7 +143,7 @@ app.get("/api/health", (req, res) => {
 app.post("/api/reports", async (req, res) => {
   try {
 const severityPrediction = predictSeverity(req.body.injuryDescription);
-
+const priority = calculatePriority(severityPrediction.severityScore);
 const report = await Report.create({
   animalType: req.body.animalType,
   injuryDescription: req.body.injuryDescription,
@@ -123,6 +152,8 @@ const report = await Report.create({
   severity: severityPrediction.severity,
   severityScore: severityPrediction.severityScore,
   severityReasons: severityPrediction.severityReasons,
+  priorityScore : priority.priorityScore,
+  priorityLevel:priority.priorityLevel,
 });
 
 

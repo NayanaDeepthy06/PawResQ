@@ -40,6 +40,15 @@ const reportSchema = new mongoose.Schema(
     type: [String],
     default: [],
   },
+ priorityScore: {
+  type: Number,
+  default: 20,
+},
+priorityLevel: {
+  type: String,
+  enum: ["Routine", "Important", "Urgent", "Emergency"],
+  default: "Routine",
+},
   },
   {
     timestamps: true,

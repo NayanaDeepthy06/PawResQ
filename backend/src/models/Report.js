@@ -22,6 +22,10 @@ const reportSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    imageUrl:{
+      type : String,
+      default : "",
+    },
     status: {
       type: String,
       enum: ["Pending", "Accepted", "Rescued", "Closed"],

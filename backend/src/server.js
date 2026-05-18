@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 import Report from "./models/Report.js";
+import upload from "./middleware/upload.js"
 
 dotenv.config();
 
@@ -131,7 +132,10 @@ const PORT = process.env.PORT || 5001;
 
 
 app.use(cors());
-app.use(express.json());
+
+app.use(express.json({
+  limit: "10mb",
+}));
 
 app.get("/api/health", (req, res) => {
   res.json({
@@ -140,7 +144,10 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-app.post("/api/reports", async (req, res) => {
+app.post(
+  "/api/reports",
+  upload.single("image"),
+  async (req, res) => {
   try {
 const severityPrediction = predictSeverity(req.body.injuryDescription);
 const priority = calculatePriority(severityPrediction.severityScore);
@@ -149,6 +156,7 @@ const report = await Report.create({
   injuryDescription: req.body.injuryDescription,
   location: req.body.location,
   contactNumber: req.body.contactNumber,
+  imageUrl: req.file?.path || "",
   severity: severityPrediction.severity,
   severityScore: severityPrediction.severityScore,
   severityReasons: severityPrediction.severityReasons,
@@ -161,12 +169,16 @@ const report = await Report.create({
       message: "Report submitted successfully",
       report,
     });
-  } catch (error) {
-    res.status(400).json({
-      message: "Failed to submit report",
-      error: error.message,
-    });
-  }
+ } catch (error) {
+
+  console.error("REPORT SUBMISSION ERROR:");
+  console.error(error);
+
+  res.status(400).json({
+    message: "Failed to submit report",
+    error: error.message,
+  });
+}
 });
 
 

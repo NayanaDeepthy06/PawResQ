@@ -126,12 +126,15 @@ if (report.injuryDescription.trim().length < 15) {
    setFormError("");
   setIsSubmitting(true);
 
-  const reportPayload = {
-    animalType: report.animalType,
-    injuryDescription: report.injuryDescription,
-    location: report.location,
-    contactNumber: report.contactNumber,
-  };
+const formData = new FormData();
+formData.append("animalType",report.animalType);
+formData.append("injuryDescription",report.injuryDescription);
+formData.append("location",report.location);
+formData.append("contactNumber",report.contactNumber);
+
+if(report.image){
+  formData.append("image",report.image);
+}
 
   try {
       const controller = new AbortController();
@@ -143,20 +146,22 @@ if (report.injuryDescription.trim().length < 15) {
       "http://localhost:5001/api/reports",
       {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(reportPayload),
+       
+        body: formData,
         signal: controller.signal,
       }
     );
 
   const data = await response.json();
-  clearTimeout(timeoutId);
+    clearTimeout(timeoutId);
 
-  setSubmittedReport(data.report);
-  setSubmissionSuccess(true);
-  setFormError("");
+    if (!response.ok) {
+      throw new Error(data.message || "Submission failed");
+    }
+
+    setSubmittedReport(data.report);
+    setSubmissionSuccess(true);
+    setFormError("");
 } catch (error) {
   setFormError(
     "Unable to submit rescue report. Please try again."
@@ -472,15 +477,15 @@ function formatDate(dateString) {
        <div className="metadata-image-section">
           <span className="detail-key">Uploaded Animal Image</span>
 
-          {imagePreview ? (
+          {submittedReport.imageUrl ? (
             <img
-              src={imagePreview}
+              src={submittedReport.imageUrl}
               alt="Uploaded animal"
               className="metadata-image"
             />
-          ) : (
-            <p>No image selected</p>
-          )}
+            ) : (
+              <p>No image uploaded</p>
+            )}
         </div>
    </div>
     

@@ -149,13 +149,43 @@ app.post(
   upload.single("image"),
   async (req, res) => {
   try {
+ const {
+  animalType,
+  injuryDescription,
+  location,
+  contactNumber,
+} = req.body;
+
+if (
+  !animalType ||
+  !injuryDescription ||
+  !location ||
+  !contactNumber
+) {
+  return res.status(400).json({
+    message: "All required fields must be provided.",
+  });
+}
+
+if (contactNumber.trim().length < 10) {
+  return res.status(400).json({
+    message: "Invalid contact number.",
+  });
+}
+
+if (injuryDescription.trim().length < 15) {
+  return res.status(400).json({
+    message:
+      "Please provide a more detailed injury description.",
+  });
+} 
 const severityPrediction = predictSeverity(req.body.injuryDescription);
 const priority = calculatePriority(severityPrediction.severityScore);
 const report = await Report.create({
-  animalType: req.body.animalType,
-  injuryDescription: req.body.injuryDescription,
-  location: req.body.location,
-  contactNumber: req.body.contactNumber,
+  animalType,
+  injuryDescription,
+  location,
+  contactNumber,
   imageUrl: req.file?.path || "",
   severity: severityPrediction.severity,
   severityScore: severityPrediction.severityScore,

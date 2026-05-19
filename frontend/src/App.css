@@ -661,3 +661,9 @@
   font-weight: 600;
   border: 1px solid #fecaca;
 }
+
+.leaflet-container {
+  margin-top: 40px;
+  border: 1px solid #d1d5db;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
+}

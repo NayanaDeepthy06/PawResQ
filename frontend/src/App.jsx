@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import "./App.css";
-
+import RescueMap from "./components/RescueMap";
 
 const features = [
   {
@@ -41,6 +41,7 @@ function App() {
   const [submissionSuccess, setSubmissionSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
+  const fileInputRef = useRef(null);
   function handleChange(event) {
   const { name, value } = event.target;
 
@@ -162,6 +163,11 @@ if(report.image){
     setSubmittedReport(data.report);
     setSubmissionSuccess(true);
     setFormError("");
+    setReport(initialReport);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
 } catch (error) {
   setFormError(
     "Unable to submit rescue report. Please try again."
@@ -308,6 +314,7 @@ function formatDate(dateString) {
               Animal Image
 
               <input
+                ref={fileInputRef}
                 type="file"
                 accept="image/*"
                 onChange={handleImageChange}
@@ -491,6 +498,7 @@ function formatDate(dateString) {
     
    
 </section>
+
   </>
 )}
 
@@ -502,6 +510,8 @@ function formatDate(dateString) {
             </article>
           ))}
         </div>
+        
+        <RescueMap />
       </section>
     </main>
   );

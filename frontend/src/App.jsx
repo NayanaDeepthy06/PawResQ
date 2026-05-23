@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./App.css";
 import RescueMap from "./components/RescueMap";
 
@@ -29,10 +29,13 @@ const initialReport = {
   animalType: "",
   injuryDescription: "",
   location: "",
+  landmark: "",
   contactNumber: "",
   image: null,
+  latitude: null,
+  longitude: null,
+  
 };
-
 
 function App() {
   const [report, setReport] = useState(initialReport);
@@ -41,16 +44,45 @@ function App() {
   const [submissionSuccess, setSubmissionSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
+  const [locationMode, setLocationMode] = useState("");
+  const [locationConfirmed, setLocationConfirmed] =  useState(false);
   const fileInputRef = useRef(null);
+  const mapSectionRef = useRef(null);
+  const locationInputRef = useRef(null);
+  const [selectedPosition, setSelectedPosition] = useState(null);
+  const [detectedAddress, setDetectedAddress] = useState("");
+useEffect(() => {
+  if (selectedPosition) {
+    setReport((currentReport) => ({
+      ...currentReport,
+      latitude: selectedPosition[0],
+      longitude: selectedPosition[1],
+      location: detectedAddress,
+    }));
+
+    setLocationConfirmed(false);
+  }
+}, [selectedPosition, detectedAddress]);
+
   function handleChange(event) {
   const { name, value } = event.target;
+  if (name === "contactNumber") {
+  const numericValue =
+    value.replace(/\D/g, "");
+
+  setReport((currentReport) => ({
+    ...currentReport,
+    contactNumber: numericValue,
+  }));
+
+  return;
+}
 
   setReport((currentReport) => ({
     ...currentReport,
     [name]: value,
   }));
 }
-
 function handleImageChange(event) {
   const selectedFile = event.target.files[0];
 
@@ -100,8 +132,75 @@ function handleRemoveImage() {
   setImagePreview(null);
 }
 
+function handleUseCurrentLocation() {
+  setLocationMode("current");
+
+  mapSectionRef.current?.scrollIntoView({
+    behavior: "smooth",
+  });
+
+  alert(
+    "Detecting your current rescue location. Please verify it on the map."
+  );
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      const newPosition = [
+        position.coords.latitude,
+        position.coords.longitude,
+      ];
+
+      setSelectedPosition(newPosition);
+      setLocationConfirmed(false);
+    },
+
+    (error) => {
+      console.error(error);
+
+      alert(
+        "Unable to detect current location."
+      );
+    }
+  );
+}
+
+function handlePinLocation() {
+  setLocationMode("pin");
+  setLocationConfirmed(false);
+
+  mapSectionRef.current?.scrollIntoView({
+    behavior: "smooth",
+  });
+
+  alert(
+    "Please tap on the map to select the exact rescue location."
+  );
+}
+
+function handleManualLocation() {
+  setLocationMode("manual");
+  setLocationConfirmed(false);
+
+  locationInputRef.current?.scrollIntoView({
+    behavior: "smooth",
+  });
+
+  locationInputRef.current?.focus();
+
+  alert(
+    "Please enter the rescue location manually."
+  );
+}
+
 async function handleSubmit(event) {
   event.preventDefault();
+  if (!locationConfirmed) {
+  setFormError(
+    "Please confirm the rescue location before submitting."
+  );
+
+  return;
+}
 if (
   !report.animalType ||
   !report.injuryDescription ||
@@ -132,6 +231,21 @@ formData.append("animalType",report.animalType);
 formData.append("injuryDescription",report.injuryDescription);
 formData.append("location",report.location);
 formData.append("contactNumber",report.contactNumber);
+formData.append("landmark", report.landmark);
+if (
+  report.latitude !== null &&
+  report.longitude !== null
+) {
+  formData.append(
+    "latitude",
+    report.latitude
+  );
+
+  formData.append(
+    "longitude",
+    report.longitude
+  );
+}
 
 if(report.image){
   formData.append("image",report.image);
@@ -164,6 +278,8 @@ if(report.image){
     setSubmissionSuccess(true);
     setFormError("");
     setReport(initialReport);
+    setSelectedPosition(null);
+    setDetectedAddress("");
     setImagePreview(null);
     if (fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -275,14 +391,17 @@ function formatDate(dateString) {
 
               <label>
                 Contact Number
-                <input
-                  type="tel"
-                  name="contactNumber"
-                  value={report.contactNumber}
-                  onChange={handleChange}
-                  placeholder="Reporter contact number"
-                  required
-                />
+               <input
+                type="tel"
+                name="contactNumber"
+                value={report.contactNumber}
+                onChange={handleChange}
+                placeholder="Reporter contact number"
+                required
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength="10"
+              />
               </label>
             </div>
 
@@ -298,17 +417,113 @@ function formatDate(dateString) {
               />
             </label>
 
-            <label>
-              Location
-              <input
-                type="text"
-                name="location"
-                value={report.location}
-                onChange={handleChange}
-                placeholder="Area, landmark, or street name"
-                required
-              />
-            </label>
+        <div className="input-group">
+          <div className="location-selection-container">
+            <h3>Select Rescue Location Method</h3>
+
+            <p className="location-helper-text">
+              Choose how you want to provide the rescue location.
+            </p>
+
+            <div className="location-options-grid">
+
+              <button
+                type="button"
+                className={`location-option-card ${
+                  locationMode === "current"
+                    ? "active-location-card"
+                    : ""
+                }`}
+                onClick={handleUseCurrentLocation}
+              >
+                📍
+                <span>Use Current Location</span>
+              </button>
+
+              <button
+                type="button"
+                className={`location-option-card ${
+                  locationMode === "pin"
+                    ? "active-location-card"
+                    : ""
+                }`}
+                onClick={handlePinLocation}
+              >
+                📌
+                <span>Pin Exact Rescue Spot</span>
+              </button>
+
+              <button
+                type="button"
+                className={`location-option-card ${
+                  locationMode === "manual"
+                    ? "active-location-card"
+                    : ""
+                }`}
+                onClick={handleManualLocation}
+              >
+                ✍
+                <span>Type Location Manually</span>
+              </button>
+
+            </div>
+          </div>
+          <label htmlFor="location">
+            Location
+          </label>
+
+          <input
+            type="text"
+            id="location"
+            name="location"
+            value={report.location}
+            onChange={handleChange}
+            placeholder="Area, landmark, or street name"
+            required
+            ref={locationInputRef}
+          />
+         {report.location && (
+              <div className="location-confirmation-box">
+
+                <p>
+                  📍 Please verify that this is the exact
+                  rescue location.
+                </p>
+
+                <button
+                  type="button"
+                  className={`confirm-location-button ${
+                    locationConfirmed
+                      ? "location-confirmed"
+                      : ""
+                  }`}
+                  onClick={() =>
+                    setLocationConfirmed(true)
+                  }
+                >
+                  {locationConfirmed
+                    ? "✅ Location Confirmed"
+                    : "Confirm Rescue Location"}
+                </button>
+
+              </div>
+            )} 
+        </div>
+
+        <div className="input-group">
+          <label htmlFor="landmark">
+            Nearby Landmark
+          </label>
+
+          <input
+            type="text"
+            id="landmark"
+            name="landmark"
+            placeholder="Ex: Near Singareni Park gate"
+            value={report.landmark}
+            onChange={handleChange}
+          />
+        </div>
 
           <label className="image-upload-field">
               Animal Image
@@ -346,7 +561,9 @@ function formatDate(dateString) {
             <button
               className="submit-button"
               type="submit"
-              disabled={isSubmitting}
+              disabled={
+              isSubmitting || !locationConfirmed
+            }
             >
               {isSubmitting
                 ? "Processing Rescue Report..."
@@ -510,8 +727,18 @@ function formatDate(dateString) {
             </article>
           ))}
         </div>
-        
-        <RescueMap />
+            <p className="map-instruction">
+              📌 Click anywhere on the map to
+              pin the exact rescue location.
+            </p>
+          <div ref={mapSectionRef}>
+            <RescueMap
+            selectedPosition={selectedPosition}
+            setSelectedPosition={setSelectedPosition}
+            setDetectedAddress={setDetectedAddress}
+            submittedReport={submittedReport}
+          />
+          </div>
       </section>
     </main>
   );

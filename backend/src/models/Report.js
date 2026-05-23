@@ -17,10 +17,23 @@ const reportSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    landmark: {
+      type: String,
+      trim: true,
+      default: "",
+    },
     contactNumber: {
       type: String,
       required: true,
       trim: true,
+    },
+    latitude:{
+      type: Number,
+      default: null,
+    },
+    longitude:{
+      type: Number,
+      default: null,
     },
     imageUrl:{
       type : String,

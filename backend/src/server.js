@@ -149,11 +149,14 @@ app.post(
   upload.single("image"),
   async (req, res) => {
   try {
- const {
+const {
   animalType,
   injuryDescription,
   location,
+  landmark,
   contactNumber,
+  latitude,
+  longitude,
 } = req.body;
 
 if (
@@ -179,13 +182,16 @@ if (injuryDescription.trim().length < 15) {
       "Please provide a more detailed injury description.",
   });
 } 
-const severityPrediction = predictSeverity(req.body.injuryDescription);
+const severityPrediction = predictSeverity(injuryDescription);
 const priority = calculatePriority(severityPrediction.severityScore);
 const report = await Report.create({
   animalType,
   injuryDescription,
   location,
+  landmark,
   contactNumber,
+  latitude,
+  longitude,
   imageUrl: req.file?.path || "",
   severity: severityPrediction.severity,
   severityScore: severityPrediction.severityScore,

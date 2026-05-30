@@ -3,7 +3,10 @@ import cors from "cors";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 import Report from "./models/Report.js";
-import upload from "./middleware/upload.js"
+import upload from "./middleware/upload.js";
+import bcrypt from "bcryptjs";
+import NGO from "./models/NGO.js";
+import jwt from "jsonwebtoken";
 
 dotenv.config();
 
@@ -234,6 +237,282 @@ app.get("/api/reports", async (req, res) => {
   }
 });
 
+app.patch(
+  "/api/reports/:id/status",
+  async (req, res) => {
+    try {
+
+      const { id } = req.params;
+
+      const { status } = req.body;
+
+      const updatedFields = {
+        status,
+      };
+
+      if (status === "Accepted") {
+        updatedFields.acceptedAt =
+          new Date();
+      }
+
+      if (
+        status ===
+        "Volunteer Assigned"
+      ) {
+        updatedFields.volunteerAssignedAt =
+          new Date();
+      }
+
+      if (status === "Rescued") {
+        updatedFields.rescuedAt =
+          new Date();
+      }
+
+      const updatedReport =
+        await Report.findByIdAndUpdate(
+          id,
+          updatedFields,
+          { new: true }
+        );
+
+      res.status(200).json({
+        success: true,
+        report: updatedReport,
+      });
+
+    } catch (error) {
+
+      console.error(
+        "Failed to update rescue status:",
+        error
+      );
+
+      res.status(500).json({
+        success: false,
+        message:
+          "Failed to update rescue status",
+      });
+    }
+  }
+);
+
+app.post(
+  "/api/ngo/register",
+  async (req, res) => {
+    try {
+      const {
+        ngoName,
+        email,
+        password,
+        phoneNumber,
+        city,
+      } = req.body;
+
+      const existingNGO =
+        await NGO.findOne({ email });
+
+      if (existingNGO) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "NGO already exists",
+        });
+      }
+
+      const hashedPassword =
+        await bcrypt.hash(
+          password,
+          10
+        );
+
+      const ngo =
+        await NGO.create({
+          ngoName,
+          email,
+          password:
+            hashedPassword,
+          phoneNumber,
+          city,
+        });
+
+      res.status(201).json({
+        success: true,
+        ngo,
+      });
+    } catch (error) {
+      console.error(error);
+
+      res.status(500).json({
+        success: false,
+        message:
+          "Registration failed",
+      });
+    }
+  }
+);
+
+app.post(
+  "/api/ngo/login",
+  async (req, res) => {
+    try {
+      const {
+        email,
+        password,
+      } = req.body;
+
+      const ngo =
+        await NGO.findOne({
+          email,
+        });
+
+      if (!ngo) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Invalid email",
+        });
+      }
+
+      const isMatch =
+        await bcrypt.compare(
+          password,
+          ngo.password
+        );
+
+      if (!isMatch) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Invalid password",
+        });
+      }
+      if (!ngo.isVerified) {
+      return res.status(403).json({
+        success: false,
+        message:
+          "NGO verification pending. Please wait for admin approval.",
+      });
+    }
+      const token =
+        jwt.sign(
+          {
+            ngoId: ngo._id,
+            ngoName:
+              ngo.ngoName,
+          },
+          process.env.JWT_SECRET,
+          {
+            expiresIn: "7d",
+          }
+        );
+
+      res.json({
+        success: true,
+        token,
+        ngo: {
+          id: ngo._id,
+          ngoName:
+            ngo.ngoName,
+          email:
+            ngo.email,
+          city:
+            ngo.city,
+        },
+      });
+    } catch (error) {
+      console.error(error);
+
+      res.status(500).json({
+        success: false,
+        message:
+          "Login failed",
+      });
+    }
+  }
+);
+
+   app.patch(
+ "/api/admin/ngo/:id/approve",
+ async (req, res) => {
+   try {
+
+
+     const ngo =
+       await NGO.findByIdAndUpdate(
+         req.params.id,
+         {
+           isVerified: true,
+           verificationStatus:
+             "Approved",
+         },
+         { new: true }
+       );
+
+
+     if (!ngo) {
+       return res.status(404).json({
+         success: false,
+         message:
+           "NGO not found",
+       });
+     }
+
+
+     res.json({
+       success: true,
+       message:
+         "NGO approved successfully",
+       ngo,
+     });
+
+
+   } catch (error) {
+
+
+     console.error(error);
+
+
+     res.status(500).json({
+       success: false,
+       message:
+         "Approval failed",
+     });
+   }
+ }
+);
+
+app.get(
+ "/api/admin/pending-ngos",
+ async (req, res) => {
+   try {
+
+
+     const ngos =
+       await NGO.find({
+         isVerified: false,
+       });
+
+
+     res.json({
+       success: true,
+       ngos,
+     });
+
+
+   } catch (error) {
+
+
+     console.error(error);
+
+
+     res.status(500).json({
+       success: false,
+       message:
+         "Failed to fetch NGOs",
+     });
+   }
+ }
+);
 
 app.listen(PORT, () => {
   console.log(`PawResQ backend running on http://localhost:${PORT}`);

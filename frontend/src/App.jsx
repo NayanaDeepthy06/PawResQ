@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import "./App.css";
 import RescueMap from "./components/RescueMap";
+import NGODashboard from "./components/NGODashboard";
 
 const features = [
   {
@@ -739,6 +740,7 @@ function formatDate(dateString) {
             submittedReport={submittedReport}
           />
           </div>
+       <NGODashboard />
       </section>
     </main>
   );

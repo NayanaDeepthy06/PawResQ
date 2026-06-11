@@ -56,6 +56,20 @@ const reportSchema = new mongoose.Schema(
       default: null,
     },
 
+    acceptedByNGO: {
+
+    ngoId: {
+      type: String,
+      default: null,
+    },
+
+    ngoName: {
+      type: String,
+      default: null,
+    },
+
+  },
+    
     volunteerAssignedAt: {
       type: Date,
       default: null,

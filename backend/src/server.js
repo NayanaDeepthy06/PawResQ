@@ -1,11 +1,15 @@
+import { createServer } from "http";
+import { Server } from "socket.io";
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 import Report from "./models/Report.js";
 import upload from "./middleware/upload.js";
+import verifyNGO from "./middleware/verifyNGO.js";
 import bcrypt from "bcryptjs";
 import NGO from "./models/NGO.js";
+import calculateDistance from "./utils/calculateDistance.js";
 import jwt from "jsonwebtoken";
 
 dotenv.config();
@@ -203,6 +207,87 @@ const report = await Report.create({
   priorityLevel:priority.priorityLevel,
 });
 
+const approvedNGOs =
+  await NGO.find({
+    isVerified: true,
+  });
+
+const ALERT_RADIUS_KM = 15;
+
+const nearbyNGOs =
+  approvedNGOs.filter(
+    (ngo) => {
+
+      const distance =
+        calculateDistance(
+          report.latitude,
+          report.longitude,
+          ngo.latitude,
+          ngo.longitude
+        );
+
+      return distance <= ALERT_RADIUS_KM;
+
+    }
+  );
+
+console.log(
+  "Nearby NGOs:",
+  nearbyNGOs.map(
+    (ngo) => ngo.ngoName
+  )
+);
+for (const ngo of nearbyNGOs) {
+
+  const distance =
+    calculateDistance(
+      report.latitude,
+      report.longitude,
+      ngo.latitude,
+      ngo.longitude
+    );
+
+  console.log(
+    "SENDING ALERT TO:",
+    ngo.ngoName
+  );
+
+  console.log(
+    "ROOM:",
+    `ngo_${ngo._id}`
+  );
+
+  console.log(
+    "DISTANCE:",
+    distance
+  );
+
+  console.log(
+  "EMITTING TO ROOM:",
+  `ngo_${ngo._id}`
+);
+
+  io.to(
+    `ngo_${ngo._id}`
+  ).emit(
+    "NEARBY_RESCUE_ALERT",
+    {
+      report,
+      distance:
+        distance.toFixed(1),
+    }
+  );
+
+  console.log(
+  "ALERT SENT"
+);
+
+}
+
+io.emit(
+  "NEW_RESCUE_CASE",
+  report
+);
 
     res.status(201).json({
       message: "Report submitted successfully",
@@ -239,7 +324,12 @@ app.get("/api/reports", async (req, res) => {
 
 app.patch(
   "/api/reports/:id/status",
+  verifyNGO,
   async (req, res) => {
+      console.log(
+      "STATUS ROUTE HIT"
+    );
+
     try {
 
       const { id } = req.params;
@@ -267,13 +357,59 @@ app.patch(
         updatedFields.rescuedAt =
           new Date();
       }
+      const report =
+      await Report.findById(id);
 
+    if (!report) {
+
+      return res.status(404).json({
+        success: false,
+        message: "Report not found",
+      });
+
+    }
+    if (
+  report.acceptedByNGO?.ngoId?.toString() !==
+  req.ngo.ngoId
+  ) {
+
+      return res.status(403).json({
+        success: false,
+        message:
+          "You do not own this rescue case",
+      });
+
+    }
       const updatedReport =
         await Report.findByIdAndUpdate(
           id,
           updatedFields,
-          { new: true }
+          {
+          returnDocument: "after",
+        }
         );
+        if (
+        status ===
+        "Volunteer Assigned"
+      ) {
+
+        io.emit(
+          "VOLUNTEER_ASSIGNED",
+          updatedReport
+        );
+
+      }
+            if (
+        status ===
+        "Rescued"
+      ) {
+
+        io.emit(
+          "CASE_RESCUED",
+          updatedReport
+        );
+
+      }
 
       res.status(200).json({
         success: true,
@@ -296,6 +432,83 @@ app.patch(
   }
 );
 
+app.patch(
+  "/api/reports/:id/accept",
+  verifyNGO,
+  async (req, res) => {
+
+    try {
+
+      const { id } =
+        req.params;
+
+     const ngoId = req.ngo.ngoId;
+    const ngoName = req.ngo.ngoName;
+  
+
+      const report =
+        await Report.findById(id);
+
+      if (!report) {
+
+        return res.status(404).json({
+          success: false,
+          message:
+            "Report not found",
+        });
+
+      }
+
+      if (
+        report.acceptedByNGO?.ngoId
+      ) {
+
+        return res.status(400).json({
+          success: false,
+          message:
+            `Already accepted by ${report.acceptedByNGO.ngoName}`,
+        });
+
+      }
+
+      report.status =
+        "Accepted";
+
+      report.acceptedAt =
+        new Date();
+
+      report.acceptedByNGO = {
+        ngoId,
+        ngoName,
+      };
+
+      await report.save();
+
+      io.emit(
+      "CASE_ACCEPTED",
+      report
+    );
+
+      res.json({
+        success: true,
+        report,
+      });
+
+    } catch (error) {
+
+      console.error(error);
+
+      res.status(500).json({
+        success: false,
+        message:
+          "Failed to accept rescue",
+      });
+
+    }
+
+  }
+);
+
 app.post(
   "/api/ngo/register",
   async (req, res) => {
@@ -305,8 +518,21 @@ app.post(
         email,
         password,
         phoneNumber,
-        city,
+        address,
+        latitude,
+        longitude,
       } = req.body;
+
+      if (
+        !latitude ||
+        !longitude
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Please select NGO location on map",
+        });
+      }
 
       const existingNGO =
         await NGO.findOne({ email });
@@ -315,7 +541,7 @@ app.post(
         return res.status(400).json({
           success: false,
           message:
-            "NGO already exists",
+             "NGO already registered. Please login.",
         });
       }
 
@@ -325,20 +551,25 @@ app.post(
           10
         );
 
-      const ngo =
-        await NGO.create({
-          ngoName,
-          email,
-          password:
-            hashedPassword,
-          phoneNumber,
-          city,
-        });
+  const ngo = new NGO({
+  ngoName,
+  email,
+  password: hashedPassword,
+  phoneNumber,
+  address,
+  latitude,
+  longitude,
+});
 
-      res.status(201).json({
-        success: true,
-        ngo,
-      });
+    await ngo.save();
+
+    res.status(201).json({
+      success: true,
+      message:
+        "Registration successful. Waiting for admin approval.",
+      ngo,
+    });
+      
     } catch (error) {
       console.error(error);
 
@@ -409,15 +640,14 @@ app.post(
       res.json({
         success: true,
         token,
-        ngo: {
-          id: ngo._id,
-          ngoName:
-            ngo.ngoName,
-          email:
-            ngo.email,
-          city:
-            ngo.city,
-        },
+      ngo: {
+        id: ngo._id,
+        ngoName: ngo.ngoName,
+        email: ngo.email,
+        address: ngo.address,
+        latitude: ngo.latitude,
+        longitude: ngo.longitude,
+      },
       });
     } catch (error) {
       console.error(error);
@@ -428,6 +658,49 @@ app.post(
           "Login failed",
       });
     }
+  }
+);
+app.patch(
+  "/api/ngo/location",
+  verifyNGO,
+  async (req, res) => {
+
+    try {
+
+      const {
+        latitude,
+        longitude,
+      } = req.body;
+
+      const ngo =
+        await NGO.findByIdAndUpdate(
+          req.ngo.ngoId,
+          {
+            latitude,
+            longitude,
+          },
+          {
+           returnDocument: "after",
+          }
+        );
+
+      res.json({
+        success: true,
+        ngo,
+      });
+
+    } catch (error) {
+
+      console.error(error);
+
+      res.status(500).json({
+        success: false,
+        message:
+          "Failed to update location",
+      });
+
+    }
+
   }
 );
 
@@ -445,7 +718,9 @@ app.post(
            verificationStatus:
              "Approved",
          },
-         { new: true }
+        {
+        returnDocument: "after",
+      }
        );
 
 
@@ -514,6 +789,97 @@ app.get(
  }
 );
 
-app.listen(PORT, () => {
-  console.log(`PawResQ backend running on http://localhost:${PORT}`);
+app.get(
+  "/api/admin/approved-ngos",
+  async (req, res) => {
+
+    try {
+
+      const ngos =
+        await NGO.find({
+          isVerified: true
+        });
+
+      res.json({
+        success: true,
+        ngos
+      });
+
+    } catch (error) {
+
+      console.error(error);
+
+      res.status(500).json({
+        success: false,
+        message:
+          "Failed to fetch approved NGOs"
+      });
+
+    }
+
+  }
+);
+
+const server =
+  createServer(app);
+
+const io = new Server(server, {
+  cors: {
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:5174",
+    ],
+    methods: [
+      "GET",
+      "POST",
+      "PATCH",
+    ],
+    credentials: true,
+  },
+});
+
+io.on("connection", (socket) => {
+
+  console.log(
+    "NGO Connected:",
+    socket.id
+  );
+
+ socket.on(
+  "JOIN_NGO_ROOM",
+  (ngoId) => {
+    console.log(
+    "JOIN_NGO_ROOM EVENT RECEIVED",
+    ngoId
+  );
+
+    socket.join(
+      `ngo_${ngoId}`
+    );
+
+    console.log(
+      `NGO Joined Room: ngo_${ngoId}`
+    );
+
+  }
+);
+  socket.on(
+    "disconnect",
+    () => {
+
+      console.log(
+        "NGO Disconnected:",
+        socket.id
+      );
+
+    }
+  );
+});
+
+server.listen(PORT, () => {
+
+  console.log(
+    `PawResQ backend running on http://localhost:${PORT}`
+  );
+
 });

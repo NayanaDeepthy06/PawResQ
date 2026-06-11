@@ -23,14 +23,24 @@ const ngoSchema = new mongoose.Schema(
       required: true,
     },
 
-    city: {
-      type: String,
-      required: true,
-    },
+    address: {
+    type: String,
+    required: true,
+  },
     isVerified: {
     type: Boolean,
     default: false,
     },
+
+  latitude: {
+  type: Number,
+  required: true,
+},
+
+longitude: {
+  type: Number,
+  required: true,
+},
 
     verificationStatus: {
     type: String,

@@ -1,11 +1,192 @@
+import "./NGODashboard.css";
+import socket from "../socket";
 import { useEffect, useState } from "react";
-
+import {
+  FaMapMarkerAlt,
+  FaClock,
+  FaCheckCircle,
+  FaAmbulance,
+  FaPaw,
+  FaTimes,
+} from "react-icons/fa";
 function NGODashboard() {
   const [reports, setReports] = useState([]);
-  const [activeFilter, setActiveFilter] =
-  useState("All");
-const [searchTerm, setSearchTerm] =
-  useState("");
+  const [selectedImage, setSelectedImage] = useState(null);
+  
+  const [activeFilter, setActiveFilter] = useState("All");
+ 
+const [searchTerm, setSearchTerm] =  useState("");
+const [ nearbyAlert,  setNearbyAlert,] = useState(null);
+
+
+ 
+
+
+  useEffect(() => {
+
+  socket.on(
+  "connect",
+  () => {
+
+    console.log(
+      "Connected:",
+      socket.id
+    );
+
+    const ngo =
+      JSON.parse(
+        localStorage.getItem(
+          "ngoData"
+        ) || "{}"
+      );
+      console.log(
+        "NGO DATA:",
+        ngo
+      );
+
+    if (ngo.id) {
+      console.log(
+        "JOINING ROOM:",
+        ngo.id
+      );
+
+      socket.emit(
+        "JOIN_NGO_ROOM",
+        ngo.id
+      );
+
+    }
+
+  }
+);
+
+  socket.on(
+    "NEW_RESCUE_CASE",
+    (newReport) => {
+
+      console.log(
+        "New Rescue Case:",
+        newReport
+      );
+
+      setReports(
+        (currentReports) => [
+          newReport,
+          ...currentReports,
+        ]
+      );
+
+    }
+  );
+
+  socket.on(
+    "CASE_ACCEPTED",
+    (updatedReport) => {
+
+      console.log(
+        "CASE_ACCEPTED RECEIVED",
+        updatedReport
+      );
+
+      setReports(
+        (currentReports) =>
+          currentReports.map(
+            (report) =>
+              report._id ===
+              updatedReport._id
+                ? updatedReport
+                : report
+          )
+      );
+
+    }
+  );
+  socket.on(
+  "VOLUNTEER_ASSIGNED",
+  (updatedReport) => {
+
+    console.log(
+      "VOLUNTEER_ASSIGNED RECEIVED",
+      updatedReport
+    );
+
+    setReports(
+      (currentReports) =>
+        currentReports.map(
+          (report) =>
+            report._id ===
+            updatedReport._id
+              ? updatedReport
+              : report
+        )
+    );
+
+  }
+);
+socket.on(
+  "CASE_RESCUED",
+  (updatedReport) => {
+
+    console.log(
+      "CASE_RESCUED RECEIVED",
+      updatedReport
+    );
+
+    setReports(
+      (currentReports) =>
+        currentReports.map(
+          (report) =>
+            report._id ===
+            updatedReport._id
+              ? updatedReport
+              : report
+        )
+    );
+
+  }
+);
+socket.on(
+  "NEARBY_RESCUE_ALERT",
+  (data) => {
+
+    console.log(
+      "🚨🚨🚨 ALERT RECEIVED 🚨🚨🚨"
+    );
+
+    console.log(data);
+
+    setNearbyAlert(data);
+
+  }
+);
+
+
+return () => {
+
+  socket.off("connect");
+
+  socket.off(
+    "NEW_RESCUE_CASE"
+  );
+
+  socket.off(
+    "CASE_ACCEPTED"
+  );
+
+  socket.off(
+    "VOLUNTEER_ASSIGNED"
+  );
+
+  socket.off(
+    "CASE_RESCUED"
+  );
+
+    socket.off(
+  "NEARBY_RESCUE_ALERT"
+);
+
+    };
+  }, []);
 
   useEffect(() => {
     async function fetchReports() {
@@ -27,6 +208,24 @@ const [searchTerm, setSearchTerm] =
 
     fetchReports();
   }, []);
+
+  useEffect(() => {
+
+  if (!nearbyAlert) return;
+
+  const timer =
+    setTimeout(() => {
+
+      setNearbyAlert(null);
+
+    }, 15000);
+
+  return () =>
+    clearTimeout(timer);
+
+}, [nearbyAlert]);
+
+  
 function getTimeAgo(timestamp) {
 
   if (!timestamp) {
@@ -75,9 +274,14 @@ async function updateRescueStatus(
         method: "PATCH",
 
         headers: {
-          "Content-Type":
-            "application/json",
-        },
+        "Content-Type":
+          "application/json",
+
+        Authorization:
+          `Bearer ${localStorage.getItem(
+            "ngoToken"
+          )}`,
+      },
 
         body: JSON.stringify({
           status: newStatus,
@@ -108,8 +312,168 @@ async function updateRescueStatus(
   }
 }
 
+async function acceptRescueCase(
+  reportId
+) {
+
+  try {
+
+    const ngo =
+      JSON.parse(
+        localStorage.getItem(
+          "ngoData"
+        )
+      );
+
+    const response =
+      await fetch(
+        `http://localhost:5001/api/reports/${reportId}/accept`,
+        {
+          method: "PATCH",
+
+          headers: {
+          "Content-Type":
+            "application/json",
+
+          Authorization:
+            `Bearer ${localStorage.getItem(
+              "ngoToken"
+            )}`,
+        },
+
+          body: JSON.stringify({
+            ngoId: ngo.id,
+            ngoName:
+              ngo.ngoName,
+          }),
+        }
+      );
+
+    const data =
+      await response.json();
+
+    if (!response.ok) {
+
+      alert(
+        data.message
+      );
+
+      return;
+
+    }
+
+    setReports(
+      (previousReports) =>
+        previousReports.map(
+          (report) =>
+            report._id === reportId
+              ? data.report
+              : report
+        )
+    );
+
+  } catch (error) {
+
+    console.error(
+      error
+    );
+
+    alert(
+      "Failed to accept rescue"
+    );
+
+  }
+
+}
+
+const currentNGO =
+  JSON.parse(
+    localStorage.getItem(
+      "ngoData"
+    ) || "{}"
+  );
+
   return (
     <section className="ngo-dashboard">
+      
+    {nearbyAlert && (
+
+  <div className="nearby-alert-card">
+
+    <button
+      className="alert-close-btn"
+      onClick={() =>
+        setNearbyAlert(null)
+      }
+    >
+      <FaTimes />
+    </button>
+
+    <h3 className="alert-title">
+      Emergency Rescue Nearby
+      </h3>
+
+    <p>
+      Animal:
+      {" "}
+      {
+        nearbyAlert.report
+          .animalType
+      }
+    </p>
+
+    <p>
+      Severity:
+      {" "}
+      {
+        nearbyAlert.report
+          .severity
+      }
+    </p>
+
+    <p>
+      Distance:
+      {" "}
+      {
+        nearbyAlert.distance
+      } km
+    </p>
+
+    <p>
+      Location:
+      {" "}
+      {
+        nearbyAlert.report
+          .location
+      }
+    </p>
+
+    <button
+      className="view-case-btn"
+      onClick={() => {
+
+        const caseElement =
+          document.getElementById(
+            nearbyAlert.report._id
+          );
+
+        if (caseElement) {
+
+          caseElement.scrollIntoView({
+            behavior:
+              "smooth",
+          });
+
+        }
+
+      }}
+    >
+      View Case
+    </button>
+
+  </div>
+
+)}
 
       <div className="dashboard-header">
         <h2>
@@ -314,15 +678,30 @@ async function updateRescueStatus(
             priorityOrder[b.priorityLevel]
           );
         })
-            .map((report) => (
-             <div
-                key={report._id}
-                className={`rescue-case-card ${
+           .map((report) => (
+                <div
+                  id={report._id}
+                  key={report._id}
+                  className={`rescue-case-card ${
                     report.priorityLevel === "Emergency"
                     ? "emergency-case"
                     : ""
-                }`}
+                  }`}
                 >
+                  {report.imageUrl && (
+
+                    <img
+                      src={report.imageUrl}
+                      alt={report.animalType}
+                      className="animal-image"
+                      onClick={() =>
+                        setSelectedImage(
+                          report.imageUrl
+                        )
+                      }
+                    />
+
+                  )}
 
                 <div className="case-card-top">
 
@@ -340,8 +719,10 @@ async function updateRescueStatus(
 
                 </div>
 
-                <p className="case-location">
-                    📍 {report.location}
+               <p className="case-location">
+                  <FaMapMarkerAlt />
+                  {" "}
+                  {report.location}
                 </p>
 
                 <p className="case-description">
@@ -350,8 +731,9 @@ async function updateRescueStatus(
               <div className="case-timeline">
 
                 <p>
-                  🕒 Reported:
-                  {" "}
+                  <FaClock />
+                    {" "}
+                    Reported:
                   {getTimeAgo(
                     report.createdAt
                   )}
@@ -359,8 +741,9 @@ async function updateRescueStatus(
 
                 {report.acceptedAt && (
                   <p>
-                    ✅ Accepted:
+                   <FaCheckCircle />
                     {" "}
+                    Accepted:
                     {getTimeAgo(
                       report.acceptedAt
                     )}
@@ -369,8 +752,9 @@ async function updateRescueStatus(
 
                 {report.volunteerAssignedAt && (
                   <p>
-                    🚑 Volunteer Assigned:
-                    {" "}
+                   <FaAmbulance />
+                      {" "}
+                      Volunteer Assigned:
                     {getTimeAgo(
                       report.volunteerAssignedAt
                     )}
@@ -379,8 +763,9 @@ async function updateRescueStatus(
 
                 {report.rescuedAt && (
                   <p>
-                    🐾 Rescued:
-                    {" "}
+                   <FaPaw />
+                      {" "}
+                      Rescued:
                     {getTimeAgo(
                       report.rescuedAt
                     )}
@@ -412,6 +797,19 @@ async function updateRescueStatus(
                     {" "}
                     {report.severity}
                 </span>
+                {report.acceptedByNGO?.ngoName && (
+                  <p className="accepted-ngo">
+
+                    Accepted By:
+                    {" "}
+                    {
+                      report.acceptedByNGO
+                        .ngoName
+                    }
+
+                  </p>
+
+                )}
 
                 </div>
 
@@ -422,9 +820,8 @@ async function updateRescueStatus(
             <button
               className="accept-button"
               onClick={() =>
-                updateRescueStatus(
-                  report._id,
-                  "Accepted"
+                acceptRescueCase(
+                  report._id
                 )
               }
             >
@@ -433,45 +830,129 @@ async function updateRescueStatus(
           )}
 
           {report.status === "Accepted" && (
-            <button
-              className="assign-button"
-              onClick={() =>
-                updateRescueStatus(
-                  report._id,
-                  "Volunteer Assigned"
-                )
-              }
-            >
-              Assign Volunteer
-            </button>
+
+            report.acceptedByNGO?.ngoId ===
+            currentNGO?.id ? (
+
+              <button
+                className="assign-button"
+                onClick={() =>
+                  updateRescueStatus(
+                    report._id,
+                    "Volunteer Assigned"
+                  )
+                }
+              >
+                Assign Volunteer
+              </button>
+
+            ) : (
+
+              <button
+                className="assigned-button"
+                disabled
+              >
+                Assigned To{" "}
+                {
+                  report.acceptedByNGO
+                    ?.ngoName
+                }
+              </button>
+
+            )
           )}
 
-          {report.status ===
-            "Volunteer Assigned" && (
-            <button
-              className="rescue-button"
-              onClick={() =>
-                updateRescueStatus(
-                  report._id,
-                  "Rescued"
-                )
-              }
-            >
-              Mark Rescued
-            </button>
-          )}
+      {report.status ===
+        "Volunteer Assigned" && (
+
+        report.acceptedByNGO?.ngoId ===
+        currentNGO?.id ? (
+
+          <button
+            className="rescue-button"
+            onClick={() =>
+              updateRescueStatus(
+                report._id,
+                "Rescued"
+              )
+            }
+          >
+            Mark Rescued
+          </button>
+
+        ) : (
+
+          <button
+            className="assigned-button"
+            disabled
+          >
+            Assigned To{" "}
+            {
+              report.acceptedByNGO
+                ?.ngoName
+            }
+          </button>
+
+        )
+
+      )}
 
           {report.status === "Rescued" && (
-            <div className="completed-rescue">
-              ✅ Rescue Completed
-            </div>
-          )}
+        <div className="completed-rescue">
 
+          Rescue Completed
+          <br />
+          By{" "}
+          {
+            report.acceptedByNGO
+              ?.ngoName
+          }
+
+        </div>
+      )}
         </div>      
         </div>
              ))}
 
             </div>
+
+         {selectedImage && (
+
+  <div
+    className="image-modal-overlay"
+    onClick={() =>
+      setSelectedImage(null)
+    }
+  >
+
+    <div
+      className="image-modal-content"
+      onClick={(e) =>
+        e.stopPropagation()
+      }
+    >
+
+      <button
+        className="image-close-btn"
+        onClick={() =>
+          setSelectedImage(null)
+        }
+      >
+        
+       <FaTimes />
+      </button>
+
+      <img
+        src={selectedImage}
+        alt="Animal"
+        className="full-animal-image"
+      />
+
+    </div>
+
+  </div>
+
+)}   
 
       </div>
 

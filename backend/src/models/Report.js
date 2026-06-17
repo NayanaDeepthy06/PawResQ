@@ -98,7 +98,6 @@ const reportSchema = new mongoose.Schema(
 
 },
 
-    
     volunteerAssignedAt: {
       type: Date,
       default: null,

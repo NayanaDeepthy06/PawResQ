@@ -10,17 +10,14 @@ import {
   FaTimes,
 } from "react-icons/fa";
 function NGODashboard() {
-  const [reports, setReports] = useState([]);
-  const [selectedImage, setSelectedImage] = useState(null);
-  
-  const [activeFilter, setActiveFilter] = useState("All");
- 
+const [reports, setReports] = useState([]);
+const [selectedImage, setSelectedImage] = useState(null);
+const [selectedReportId, setSelectedReportId,] = useState(null);
+const [volunteerName,setVolunteerName,] = useState("");
+const [volunteerPhone,setVolunteerPhone,] = useState(""); 
+const [activeFilter, setActiveFilter] = useState("All");
 const [searchTerm, setSearchTerm] =  useState("");
 const [ nearbyAlert,  setNearbyAlert,] = useState(null);
-
-
- 
-
 
   useEffect(() => {
 
@@ -386,6 +383,72 @@ async function acceptRescueCase(
 
 }
 
+async function assignVolunteer() {
+
+  try {
+
+    const response =
+      await fetch(
+        `http://localhost:5001/api/reports/${selectedReportId}/assign-volunteer`,
+        {
+          method: "PATCH",
+
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+
+          body: JSON.stringify({
+
+            volunteerName,
+
+            volunteerPhone,
+
+          }),
+
+        }
+      );
+
+    const data =
+      await response.json();
+
+    if (!response.ok) {
+
+      alert(
+        data.message
+      );
+
+      return;
+
+    }
+
+    setReports(
+      (currentReports) =>
+        currentReports.map(
+          (report) =>
+            report._id ===
+            selectedReportId
+              ? data.report
+              : report
+        )
+    );
+
+    setSelectedReportId(
+      null
+    );
+
+    setVolunteerName("");
+
+    setVolunteerPhone("");
+
+  } catch (error) {
+
+    console.error(error);
+
+  }
+
+}
+
 const currentNGO =
   JSON.parse(
     localStorage.getItem(
@@ -421,6 +484,10 @@ const currentNGO =
           .animalType
       }
     </p>
+    <p>
+      <strong>Tracking ID:</strong>{" "}
+      {nearbyAlert.report.trackingId}
+    </p>
 
     <p>
       Severity:
@@ -438,6 +505,13 @@ const currentNGO =
         nearbyAlert.distance
       } km
     </p>
+      {nearbyAlert.report.imageUrl && (
+    <img
+      src={nearbyAlert.report.imageUrl}
+      alt="Animal"
+      className="alert-animal-image"
+    />
+  )}
 
     <p>
       Location:
@@ -836,12 +910,12 @@ const currentNGO =
 
               <button
                 className="assign-button"
-                onClick={() =>
-                  updateRescueStatus(
-                    report._id,
-                    "Volunteer Assigned"
-                  )
-                }
+                onClick={() => {
+                setSelectedReportId(
+                  report._id
+                );
+
+              }}
               >
                 Assign Volunteer
               </button>
@@ -955,7 +1029,74 @@ const currentNGO =
 )}   
 
       </div>
+      
+  {selectedReportId && (
 
+  <div className="assign-modal-overlay">
+
+    <div className="assign-modal">
+
+      <h2>
+        Assign Volunteer
+      </h2>
+
+      <input
+        type="text"
+        placeholder="Volunteer Name"
+        value={volunteerName}
+        onChange={(e) =>
+          setVolunteerName(
+            e.target.value
+          )
+        }
+      />
+
+      <input
+        type="text"
+        placeholder="Volunteer Phone Number"
+        value={volunteerPhone}
+        onChange={(e) =>
+          setVolunteerPhone(
+            e.target.value
+          )
+        }
+      />
+
+      <div className="assign-modal-actions">
+
+        <button
+          className="assign-button"
+          onClick={
+            assignVolunteer
+          }
+        >
+          Assign Volunteer
+        </button>
+
+        <button
+          className="assigned-button"
+          onClick={() => {
+
+            setSelectedReportId(
+              null
+            );
+
+            setVolunteerName("");
+
+            setVolunteerPhone("");
+
+          }}
+        >
+          Cancel
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+)}
     </section>
   );
 }

@@ -7,8 +7,10 @@ import mongoose from "mongoose";
 import Report from "./models/Report.js";
 import upload from "./middleware/upload.js";
 import verifyNGO from "./middleware/verifyNGO.js";
+import generateTrackingId from "./utils/generateTrackingId.js";
 import bcrypt from "bcryptjs";
 import NGO from "./models/NGO.js";
+import Volunteer from "./models/Volunteer.js";
 import calculateDistance from "./utils/calculateDistance.js";
 import jwt from "jsonwebtoken";
 
@@ -191,7 +193,9 @@ if (injuryDescription.trim().length < 15) {
 } 
 const severityPrediction = predictSeverity(injuryDescription);
 const priority = calculatePriority(severityPrediction.severityScore);
+const trackingId = generateTrackingId();
 const report = await Report.create({
+  trackingId,
   animalType,
   injuryDescription,
   location,
@@ -206,13 +210,50 @@ const report = await Report.create({
   priorityScore : priority.priorityScore,
   priorityLevel:priority.priorityLevel,
 });
+console.log(
+  "REPORT LOCATION:",
+  report.latitude,
+  report.longitude
+);
 
 const approvedNGOs =
   await NGO.find({
     isVerified: true,
   });
+  console.log(
+  "APPROVED NGOs:",
+  approvedNGOs.length
+);
+
+console.log(
+  approvedNGOs.map(
+    ngo => ({
+      name: ngo.ngoName,
+      verified: ngo.isVerified,
+      lat: ngo.latitude,
+      lng: ngo.longitude
+    })
+  )
+);
 
 const ALERT_RADIUS_KM = 15;
+
+for (const ngo of approvedNGOs) {
+
+  const distance =
+    calculateDistance(
+      report.latitude,
+      report.longitude,
+      ngo.latitude,
+      ngo.longitude
+    );
+
+  console.log(
+    "DISTANCE TO NGO:",
+    ngo.ngoName,
+    distance
+  );
+}
 
 const nearbyNGOs =
   approvedNGOs.filter(
@@ -290,9 +331,13 @@ io.emit(
 );
 
     res.status(201).json({
-      message: "Report submitted successfully",
-      report,
-    });
+  message:
+    "Report submitted successfully",
+  trackingId:
+    report.trackingId,
+  report,
+
+});
  } catch (error) {
 
   console.error("REPORT SUBMISSION ERROR:");
@@ -506,6 +551,115 @@ app.patch(
 
     }
 
+  }
+);
+
+app.patch(
+  "/api/reports/:id/assign-volunteer",
+  async (req, res) => {
+
+    try {
+
+      const {
+        volunteerName,
+        volunteerPhone,
+      } = req.body;
+
+      const report =
+        await Report.findById(
+          req.params.id
+        );
+
+      if (!report) {
+
+        return res.status(404).json({
+          success: false,
+          message:
+            "Case not found",
+        });
+
+      }
+
+      report.assignedVolunteer = {
+
+        volunteerName,
+
+        volunteerPhone,
+
+        volunteerType:
+          "NGO",
+
+      };
+
+      report.volunteerAssignedAt =
+        new Date();
+
+      report.status =
+        "Volunteer Assigned";
+
+      await report.save();
+
+      res.json({
+        success: true,
+        message:
+          "Volunteer assigned successfully",
+        report,
+      });
+
+    } catch (error) {
+
+      console.error(error);
+
+      res.status(500).json({
+        success: false,
+        message:
+          "Volunteer assignment failed",
+      });
+
+    }
+
+  }
+);
+
+app.get(
+  "/api/reports/track/:trackingId",
+  async (req, res) => {
+    try {
+
+      const { trackingId } =
+        req.params;
+
+      const report =
+        await Report.findOne({
+          trackingId,
+        });
+
+      if (!report) {
+
+        return res.status(404).json({
+          success: false,
+          message:
+            "Tracking ID not found",
+        });
+
+      }
+
+      res.json({
+        success: true,
+        report,
+      });
+
+    } catch (error) {
+
+      console.error(error);
+
+      res.status(500).json({
+        success: false,
+        message:
+          "Failed to fetch report",
+      });
+
+    }
   }
 );
 
@@ -819,6 +973,317 @@ app.get(
 
   }
 );
+
+app.post(
+"/api/volunteer/register",
+upload.single("proofImage"),
+async (req, res) => {
+
+
+try {
+
+  const {
+    name,
+    email,
+    password,
+    phoneNumber,
+    address,
+    latitude,
+    longitude,
+    proofType,
+  } = req.body;
+
+  if (
+    !name ||
+    !email ||
+    !password ||
+    !phoneNumber ||
+    !address ||
+    !latitude ||
+    !longitude ||
+    !proofType
+  ) {
+    return res.status(400).json({
+      success: false,
+      message: "All fields are required",
+    });
+  }
+
+  const existingVolunteer =
+    await Volunteer.findOne({
+      email,
+    });
+
+  if (existingVolunteer) {
+    return res.status(400).json({
+      success: false,
+      message:
+        "Volunteer already registered",
+    });
+  }
+
+  const hashedPassword =
+    await bcrypt.hash(
+      password,
+      10
+    );
+
+  const volunteer =
+    await Volunteer.create({
+
+      name,
+      email,
+
+      password:
+        hashedPassword,
+
+      phoneNumber,
+
+      address,
+
+      latitude,
+
+      longitude,
+
+      proofType,
+
+      proofImageUrl:
+        req.file?.path || "",
+
+    });
+
+  res.status(201).json({
+    success: true,
+    message:
+      "Volunteer registration submitted successfully. Waiting for admin approval.",
+    volunteer,
+  });
+
+} catch (error) {
+
+  console.error(error);
+
+  res.status(500).json({
+    success: false,
+    message:
+      "Volunteer registration failed",
+  });
+
+}
+
+}
+);
+
+app.get(
+  "/api/admin/pending-volunteers",
+  async (req, res) => {
+
+    try {
+
+      const volunteers =
+        await Volunteer.find({
+          verificationStatus:
+            "Pending",
+        }).select("-password");
+
+      res.json({
+        success: true,
+        volunteers,
+      });
+
+    } catch (error) {
+
+      console.error(error);
+
+      res.status(500).json({
+        success: false,
+        message:
+          "Failed to fetch volunteers",
+      });
+
+    }
+
+  }
+);
+
+app.patch(
+  "/api/admin/approve-volunteer/:id",
+  async (req, res) => {
+
+    try {
+
+      const volunteer =
+        await Volunteer.findByIdAndUpdate(
+
+          req.params.id,
+
+          {
+            isVerified: true,
+
+            verificationStatus:
+              "Approved",
+          },
+
+          {
+            new: true,
+          }
+        );
+
+      if (!volunteer) {
+
+        return res.status(404).json({
+          success: false,
+          message:
+            "Volunteer not found",
+        });
+
+      }
+
+      res.json({
+        success: true,
+        message:
+          "Volunteer approved successfully",
+        volunteer,
+      });
+
+    } catch (error) {
+
+      console.error(error);
+
+      res.status(500).json({
+        success: false,
+        message:
+          "Approval failed",
+      });
+
+    }
+
+  }
+);
+
+app.get(
+  "/api/admin/approved-volunteers",
+  async (req, res) => {
+
+    try {
+
+      const volunteers =
+        await Volunteer.find({
+          verificationStatus:
+            "Approved",
+        }).select("-password");
+
+      res.json({
+        success: true,
+        volunteers,
+      });
+
+    } catch (error) {
+
+      console.error(error);
+
+      res.status(500).json({
+        success: false,
+        message:
+          "Failed to fetch volunteers",
+      });
+
+    }
+
+  }
+);
+
+app.post(
+  "/api/volunteer/login",
+  async (req, res) => {
+
+    try {
+
+      const {
+        email,
+        password,
+      } = req.body;
+
+      const volunteer =
+        await Volunteer.findOne({
+          email,
+        });
+
+      if (!volunteer) {
+
+        return res.status(404).json({
+          success: false,
+          message:
+            "Volunteer not found",
+        });
+
+      }
+
+      if (
+        volunteer.verificationStatus !==
+        "Approved"
+      ) {
+
+        return res.status(403).json({
+          success: false,
+          message:
+            "Your account is awaiting admin approval",
+        });
+
+      }
+
+      const isMatch =
+        await bcrypt.compare(
+          password,
+          volunteer.password
+        );
+
+      if (!isMatch) {
+
+        return res.status(401).json({
+          success: false,
+          message:
+            "Invalid credentials",
+        });
+
+      }
+
+      const token =
+        jwt.sign(
+          {
+            volunteerId:
+              volunteer._id,
+
+            volunteerName:
+              volunteer.name,
+          },
+          process.env.JWT_SECRET,
+          {
+            expiresIn: "7d",
+          }
+        );
+
+      res.json({
+        success: true,
+        token,
+        volunteer,
+      });
+
+    } catch (error) {
+
+      console.error(error);
+
+      res.status(500).json({
+        success: false,
+        message:
+          "Login failed",
+      });
+
+    }
+
+  }
+);
+
 
 const server =
   createServer(app);

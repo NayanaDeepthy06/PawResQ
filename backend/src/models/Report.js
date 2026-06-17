@@ -69,6 +69,35 @@ const reportSchema = new mongoose.Schema(
     },
 
   },
+
+  assignedVolunteer: {
+
+    volunteerId: {
+    type: String,
+    default: null,
+    },
+
+    volunteerName: {
+    type: String,
+    default: null,
+    },
+
+    volunteerPhone: {
+    type: String,
+    default: null,
+    },
+
+    volunteerType: {
+    type: String,
+    enum: [
+    "NGO",
+    "Emergency Volunteer",
+    ],
+    default: null,
+    },
+
+},
+
     
     volunteerAssignedAt: {
       type: Date,
@@ -101,6 +130,11 @@ priorityLevel: {
   enum: ["Routine", "Important", "Urgent", "Emergency"],
   default: "Routine",
 },
+trackingId: {
+  type: String,
+  unique: true,
+},
+
   },
   {
     timestamps: true,

@@ -51,6 +51,7 @@ function HomePage() {
   const [imagePreview, setImagePreview] = useState(null);
   const [submittedReport, setSubmittedReport] = useState(null);
   const [submissionSuccess, setSubmissionSuccess] = useState(false);
+  const [trackingId, setTrackingId] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
   const [locationMode, setLocationMode] = useState("");
@@ -311,7 +312,12 @@ if(report.image){
     }
 
     setSubmittedReport(data.report);
-    setSubmissionSuccess(true);
+
+      setTrackingId(
+        data.trackingId
+      );
+
+      setSubmissionSuccess(true);
     setFormError("");
     setReport(initialReport);
     setSelectedPosition(null);
@@ -660,176 +666,281 @@ function formatDate(dateString) {
          
           </form>
 
-  {submittedReport && (
-  <>
-    {submissionSuccess && (
-      <div className="success-banner">
-        <h3><FaCheckCircle />
-          Rescue Report Submitted Successfully</h3>
+  {submissionSuccess && (
+  <div className="success-banner">
+
+    <h3>
+      <FaCheckCircle />
+      Rescue Report Submitted Successfully
+    </h3>
+
+    <p>
+      PawResQ has registered this case and initiated
+      rescue coordination.
+    </p>
+
+    <div className="tracking-id-card">
+
+      <h4>
+        Tracking ID
+      </h4>
+
+      <div className="tracking-id-value">
+        {trackingId}
+      </div>
+
+      <p className="tracking-warning">
+        Please save this Tracking ID carefully.
+        You will need it to track the rescue
+        status of this case in the future.
+        We recommend taking a screenshot.
+      </p>
+
+      <button
+        type="button"
+        className="copy-tracking-btn"
+        onClick={() => {
+          navigator.clipboard.writeText(
+            trackingId
+          );
+
+          alert(
+            "Tracking ID copied successfully."
+          );
+        }}
+      >
+        Copy Tracking ID
+      </button>
+
+    </div>
+
+  </div>
+)}
+    {submittedReport && (
+  <section className="report-preview">
+
+    <div className="form-header">
+      <h2>Submitted Report Preview</h2>
+
+      <p>
+        PawResQ has analyzed this rescue report and generated an
+        AI-assisted severity and priority assessment for rescue
+        coordination.
+      </p>
+    </div>
+
+    {submittedReport.priorityLevel === "Emergency" && (
+      <div className="emergency-alert">
+        <h3>
+          <FaExclamationTriangle />
+          Emergency Rescue Required
+        </h3>
 
         <p>
-          PawResQ has registered this case and prepared it for
-          rescue coordination workflow.
+          This case has been classified as high priority and may
+          require immediate NGO or volunteer intervention.
         </p>
       </div>
     )}
 
-    <section className="report-preview">
-    <div className="form-header">
-      <h2>Submitted Report Preview</h2>
-      <p>
-        PawResQ has analyzed this rescue report and generated an AI-assisted
-        severity and priority assessment for rescue coordination.
-      </p>
-    </div>
-      {submittedReport.priorityLevel === "Emergency" && (
-        <div className="emergency-alert">
-          <h3><FaExclamationTriangle />
-            Emergency Rescue Required</h3>
+    <div className="details-group">
 
+      <h3 className="group-title">
+        Animal Information
+      </h3>
+
+      <div className="detail-item">
+        <span className="detail-key">Animal</span>
+        <span>{submittedReport.animalType}</span>
+      </div>
+
+      <div className="detail-item">
+        <span className="detail-key">Description</span>
+        <span>{submittedReport.injuryDescription}</span>
+      </div>
+
+      <div className="detail-item">
+        <span className="detail-key">Location</span>
+        <span>{submittedReport.location}</span>
+      </div>
+
+      <div className="detail-item">
+        <span className="detail-key">Contact</span>
+        <span>{submittedReport.contactNumber}</span>
+      </div>
+
+      <div className="detail-item">
+        <span className="detail-key">Status</span>
+
+        <span
+          className={`status-badge ${getStatusClass(
+            submittedReport.status
+          )}`}
+        >
+          {submittedReport.status}
+        </span>
+      </div>
+
+    </div>
+
+    <div className="assessment-card">
+
+      <h3 className="group-title">
+        AI Rescue Assessment
+      </h3>
+
+      <div className="assessment-content">
+
+        <div className="severity-section">
+
+          <span className="detail-label">
+            Predicted Severity
+          </span>
+
+          <span
+            className={`severity-badge ${getSeverityClass(
+              submittedReport.severity
+            )}`}
+          >
+            {submittedReport.severity}
+          </span>
+
+          <p className="priority-score">
+            Severity Score:
+            {" "}
+            {submittedReport.severityScore}
+          </p>
+
+        </div>
+
+        <div className="priority-section">
+
+          <span className="detail-label">
+            Priority Level
+          </span>
+
+          <span
+            className={`priority-badge ${getPriorityClass(
+              submittedReport.priorityLevel
+            )}`}
+          >
+            {submittedReport.priorityLevel}
+          </span>
+
+          <p className="priority-score">
+            Priority Score:
+            {" "}
+            {submittedReport.priorityScore}
+          </p>
+
+        </div>
+
+        <div>
           <p>
-            This case has been classified as high priority and may require
-            immediate NGO or volunteer intervention.
+            <strong>
+              Prediction Reasons:
+            </strong>
+            {" "}
+            {submittedReport.severityReasons?.join(", ")}
           </p>
         </div>
-      )}
-            <div className="details-group">
-          <h3 className="group-title">Animal Information</h3>
-
-          <div className="detail-item">
-              <span className="detail-key">Animal</span>
-              <span>{submittedReport.animalType}</span>
-          </div>
-
-          <div className="detail-item">
-              <span className="detail-key">Description</span>
-              <span>{submittedReport.injuryDescription}</span>
-          </div>
-
-          <div className="detail-item">
-              <span className="detail-key">Location</span>
-              <span>{submittedReport.location}</span>
-          </div>
-
-          <div className="detail-item">
-              <span className="detail-key">Contact</span>
-              <span>{submittedReport.contactNumber}</span>
-          </div>
-
-          <div className="detail-item">
-              <span className="detail-key">Status</span>
-
-              <span
-                className={`status-badge ${getStatusClass(
-                  submittedReport.status
-                )}`}
-              >
-                {submittedReport.status}
-              </span>
-            </div>
-        </div>
-     <div className="assessment-card">
-  <h3 className="group-title">AI Rescue Assessment</h3>
-
-  <div className="assessment-content">
-
-    <div className="severity-section">
-      <span className="detail-label">Predicted Severity</span>
-
-      <span
-        className={`severity-badge ${getSeverityClass(
-          submittedReport.severity
-        )}`}
-      >
-        {submittedReport.severity}
-      </span>
-
-      <p className="priority-score">
-        Severity Score: {submittedReport.severityScore}
-      </p>
-    </div>
-
-    <div className="priority-section">
-      <span className="detail-label">Priority Level</span>
-
-      <span
-        className={`priority-badge ${getPriorityClass(
-          submittedReport.priorityLevel
-        )}`}
-      >
-        {submittedReport.priorityLevel}
-      </span>
-
-      <p className="priority-score">
-        Priority Score: {submittedReport.priorityScore}
-      </p>
-    </div>
-
-    <div>
-      <p>
-        <strong>Prediction Reasons:</strong>{" "}
-        {submittedReport.severityReasons?.join(", ")}
-      </p>
-    </div>
 
       </div>
-   </div>
-    
+
+    </div>
+
     <div className="metadata-card">
-        <h3 className="group-title">Case Metadata</h3>
 
-        <div className="detail-item">
-          <span className="detail-key">Report ID</span>
-          <span>{submittedReport._id}</span>
-        </div>
+      <h3 className="group-title">
+        Case Metadata
+      </h3>
 
-        <div className="detail-item">
-          <span className="detail-key">Created At</span>
-         <span>{formatDate(submittedReport.createdAt)}</span>
-        </div>
+      <div className="detail-item">
+        <span className="detail-key">
+          Report ID
+        </span>
 
-       <div className="metadata-image-section">
-          <span className="detail-key">Uploaded Animal Image</span>
+        <span>
+          {submittedReport._id}
+        </span>
+      </div>
 
-          {submittedReport.imageUrl ? (
-            <img
-              src={submittedReport.imageUrl}
-              alt="Uploaded animal"
-              className="metadata-image"
-            />
-            ) : (
-              <p>No image uploaded</p>
-            )}
-        </div>
-   </div>
-    
-   
-</section>
+      <div className="detail-item">
+        <span className="detail-key">
+          Created At
+        </span>
 
-  </>
+        <span>
+          {formatDate(
+            submittedReport.createdAt
+          )}
+        </span>
+      </div>
+
+      <div className="detail-item">
+        <span className="detail-key">
+          Tracking ID
+        </span>
+
+        <span>
+          {trackingId}
+        </span>
+      </div>
+
+      <div className="metadata-image-section">
+
+        <span className="detail-key">
+          Uploaded Animal Image
+        </span>
+
+        {submittedReport.imageUrl ? (
+          <img
+            src={submittedReport.imageUrl}
+            alt="Uploaded animal"
+            className="metadata-image"
+          />
+        ) : (
+          <p>
+            No image uploaded
+          </p>
+        )}
+
+      </div>
+
+    </div>
+
+  </section>
 )}
 
-  <div className="feature-grid">
-          {features.map((feature) => (
-            <article className="feature-card" key={feature.title}>
-              <h2>{feature.title}</h2>
-              <p>{feature.description}</p>
-            </article>
-          ))}
-        </div>
-            <p className="map-instruction">
-              <FaMapPin />
-              Click anywhere on the map to
-              pin the exact rescue location.
-            </p>
-          <div ref={mapSectionRef}>
-            <RescueMap
-            selectedPosition={selectedPosition}
-            setSelectedPosition={setSelectedPosition}
-            setDetectedAddress={setDetectedAddress}
-            submittedReport={submittedReport}
-          />
-          </div>
+<div className="feature-grid">
+  {features.map((feature) => (
+    <article
+      className="feature-card"
+      key={feature.title}
+    >
+      <h2>{feature.title}</h2>
+
+      <p>
+        {feature.description}
+      </p>
+    </article>
+  ))}
+</div>
+
+<p className="map-instruction">
+  <FaMapPin />
+  Click anywhere on the map to pin
+  the exact rescue location.
+</p>
+
+<div ref={mapSectionRef}>
+  <RescueMap
+    selectedPosition={selectedPosition}
+    setSelectedPosition={setSelectedPosition}
+    setDetectedAddress={setDetectedAddress}
+    submittedReport={submittedReport}
+  />
+</div>
       </section>
     </main>
   );

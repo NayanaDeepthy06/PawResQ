@@ -9,8 +9,11 @@ import NGOAuth from "./pages/NGOAuth";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdoptionPage from "./pages/AdoptionPage";
 import ProtectedRoute from "./components/ProtectedRoute";
-
+import TrackCase from "./pages/TrackCase";
 import NGODashboard from "./components/NGODashboard";
+import VolunteerLogin from "./pages/VolunteerLogin";
+import VolunteerRegister from "./pages/VolunteerRegister";
+import VolunteerDashboard from "./pages/VolunteerDashboard";
 
 
 function App() {
@@ -22,6 +25,11 @@ function App() {
         <Route
           path="/"
           element={<HomePage />}
+        />
+
+        <Route
+          path="/track-case"
+          element={<TrackCase />}
         />
 
         <Route
@@ -42,6 +50,21 @@ function App() {
           </ProtectedRoute>
         }
       />
+
+           <Route
+          path="/volunteer-register"
+          element={<VolunteerRegister />}
+        />
+
+        <Route
+          path="/volunteer-login"
+          element={<VolunteerLogin />}
+        />
+
+        <Route
+          path="/volunteer-dashboard"
+          element={<VolunteerDashboard />}
+        />
 
         <Route
           path="/adoption"

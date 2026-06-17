@@ -1,0 +1,27 @@
+.volunteer-register-page{
+  min-height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  background:#f4f7f5;
+}
+
+.volunteer-register-card{
+  width:500px;
+  background:white;
+  padding:40px;
+  border-radius:20px;
+  text-align:center;
+
+  box-shadow:
+    0 10px 30px rgba(
+      0,
+      0,
+      0,
+      0.08
+    );
+}
+
+.volunteer-register-card h1{
+  color:#1a7a4a;
+}

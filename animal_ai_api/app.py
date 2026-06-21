@@ -260,6 +260,7 @@ def predict():
 
 if __name__ == "__main__":
     print("Starting Animal Injury Detection API...")
-    app.run(
-        debug=True
-    )
+    # app.run(
+    #     debug=True
+    # )
+    app.run(host="0.0.0.0", port=8088, debug=False)

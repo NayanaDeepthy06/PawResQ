@@ -1,16 +1,134 @@
-.volunteer-dashboard{
-  min-height:100vh;
-  background:#f4f7f5;
-  padding:40px;
+.volunteer-dashboard {
+  min-height: 100vh;
+  background: #f5f7f5;
+  padding: 40px;
 }
 
-.volunteer-dashboard h1{
-  color:#1a7a4a;
+.dashboard-header {
+  margin-bottom: 30px;
 }
 
-.dashboard-card{
-  background:white;
-  padding:25px;
-  border-radius:18px;
-  margin-top:25px;
+.dashboard-header h1 {
+  color: #1a1a1a;
+  font-size: 42px;
+  margin-bottom: 10px;
+}
+
+.dashboard-header p {
+  color: #555;
+  font-size: 18px;
+}
+
+.cases-grid {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(350px, 1fr)
+  );
+  gap: 24px;
+}
+
+.case-card {
+  background: white;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow:
+    0 10px 25px rgba(
+      0,
+      0,
+      0,
+      0.08
+    );
+
+  transition: 0.3s ease;
+}
+
+.case-card:hover {
+  transform: translateY(-4px);
+}
+
+.case-card h3 {
+  margin-bottom: 15px;
+}
+
+.priority-badge {
+  display: inline-block;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 15px;
+}
+
+.priority-emergency {
+  background: #ffe5e5;
+  color: #d63031;
+}
+
+.priority-urgent {
+  background: #fff4d6;
+  color: #d68910;
+}
+
+.priority-important {
+  background: #eafaf1;
+  color: #1e8449;
+}
+
+.accept-btn {
+  width: 100%;
+  margin-top: 15px;
+  background: #1a7a4a;
+  color: white;
+  border: none;
+  padding: 14px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.rescued-btn {
+  width: 100%;
+  margin-top: 15px;
+  background: #1565c0;
+  color: white;
+  border: none;
+  padding: 14px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.empty-state {
+  background: white;
+  padding: 40px;
+  border-radius: 20px;
+  text-align: center;
+  box-shadow:
+    0 10px 25px rgba(
+      0,
+      0,
+      0,
+      0.08
+    );
+}
+.animal-image{
+  width:100%;
+  max-height:300px;
+  object-fit:contain;
+  background:#f7f7f7;
+  border-radius:16px;
+  margin:15px 0;
+}
+
+@media (max-width:768px) {
+
+  .volunteer-dashboard {
+    padding: 20px;
+  }
+
+  .dashboard-header h1 {
+    font-size: 32px;
+  }
+
 }

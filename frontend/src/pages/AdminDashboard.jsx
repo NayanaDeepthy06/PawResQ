@@ -1,3 +1,4 @@
+import "./AdminDashboard.css";
 import {
   FaEnvelope,
   FaPhone,
@@ -12,12 +13,23 @@ function AdminDashboard() {
   const [ngos, setNgos] = useState([]);
    
   const [approvedNGOs, setApprovedNGOs] = useState([]);
+  const [
+  pendingVolunteers,
+  setPendingVolunteers,
+] = useState([]);
+
+const [
+  approvedVolunteers,
+  setApprovedVolunteers,
+] = useState([]);
   
  
 
  useEffect(() => {
   fetchPendingNGOs();
   fetchApprovedNGOs();
+  fetchPendingVolunteers();
+  fetchApprovedVolunteers();
 }, []);
 
   async function fetchPendingNGOs() {
@@ -96,6 +108,98 @@ function AdminDashboard() {
       );
     }
   }
+
+  async function fetchPendingVolunteers() {
+
+  try {
+
+    const response =
+      await fetch(
+        "http://localhost:5001/api/admin/pending-volunteers"
+      );
+
+    const data =
+      await response.json();
+
+    if (data.success) {
+
+      setPendingVolunteers(
+        data.volunteers
+      );
+
+    }
+
+  } catch (error) {
+
+    console.error(error);
+
+  }
+
+}
+
+async function fetchApprovedVolunteers() {
+
+  try {
+
+    const response =
+      await fetch(
+        "http://localhost:5001/api/admin/approved-volunteers"
+      );
+
+    const data =
+      await response.json();
+
+    if (data.success) {
+
+      setApprovedVolunteers(
+        data.volunteers
+      );
+
+    }
+
+  } catch (error) {
+
+    console.error(error);
+
+  }
+
+}
+
+async function approveVolunteer(
+  volunteerId
+) {
+
+  try {
+
+    const response =
+      await fetch(
+
+        `http://localhost:5001/api/admin/approve-volunteer/${volunteerId}`,
+
+        {
+          method: "PATCH",
+        }
+
+      );
+
+    const data =
+      await response.json();
+
+    if (data.success) {
+
+      fetchPendingVolunteers();
+
+      fetchApprovedVolunteers();
+
+    }
+
+  } catch (error) {
+
+    console.error(error);
+
+  }
+
+}
 
   return (
 
@@ -206,14 +310,185 @@ approvedNGOs.map((ngo) => (
     Address: {ngo.address}
   </p>
 
+<p>
+  <FaCheckCircle />
+  {" "}
+  Status:
+  <span className="status-approved">
+    Approved
+  </span>
+</p>
+
 </div>
 
 ))
 }
+<h1>
+  Pending Volunteer Approvals
+</h1>
 
-    </div>
+{
+pendingVolunteers.length === 0 ? (
 
-  );
+  <p>
+    No Pending Volunteers
+  </p>
+
+) : (
+
+  pendingVolunteers.map(
+    (volunteer) => (
+
+      <div
+        key={volunteer._id}
+        className="ngo-card"
+      >
+
+        <h3>
+          {volunteer.name}
+        </h3>
+
+        <p>
+          <FaEnvelope />
+          {" "}
+          Email:
+          {" "}
+          {volunteer.email}
+        </p>
+
+        <p>
+          <FaPhone />
+          {" "}
+          Phone:
+          {" "}
+          {volunteer.phoneNumber}
+        </p>
+
+        <p>
+          <FaMapMarkerAlt />
+          {" "}
+          Address:
+          {" "}
+          {volunteer.address}
+        </p>
+
+        <p>
+          Proof Type:
+          {" "}
+          {volunteer.proofType}
+        </p>
+
+        {
+          volunteer.proofImageUrl && (
+
+            <div className="volunteer-proof-section">
+
+              <img
+                src={volunteer.proofImageUrl}
+                alt="Proof"
+                className="proof-image"
+              />
+
+              <button
+                className="approve-volunteer-btn"
+                onClick={() =>
+                  approveVolunteer(
+                    volunteer._id
+                  )
+                }
+              >
+                Approve Volunteer
+              </button>
+
+            </div>
+
+          )
+        }
+
+      </div>
+
+    )
+  )
+
+)
+}
+
+<h1>
+  Approved Volunteers
+</h1>
+
+{
+approvedVolunteers.length === 0 ? (
+
+  <p>
+    No Approved Volunteers
+  </p>
+
+) : (
+
+  approvedVolunteers.map(
+    (volunteer) => (
+
+      <div
+        key={volunteer._id}
+        className="ngo-card"
+      >
+
+        <h3>
+          {volunteer.name}
+        </h3>
+
+        <p>
+          <FaEnvelope />
+          {" "}
+          Email:
+          {" "}
+          {volunteer.email}
+        </p>
+
+        <p>
+          <FaPhone />
+          {" "}
+          Phone:
+          {" "}
+          {volunteer.phoneNumber}
+        </p>
+
+        <p>
+          <FaMapMarkerAlt />
+          {" "}
+          Address:
+          {" "}
+          {volunteer.address}
+        </p>
+
+        <p> 
+          <FaCheckCircle />
+          {" "}
+        Status:
+        <span
+          style={{
+            color:"#1a7a4a",
+            fontWeight:"700",
+            marginLeft:"8px",
+          }}
+        >
+          Approved
+        </span>
+      </p>
+
+      </div>
+
+    )
+  )
+
+)
+}
+
+</div>
+
+);
+
 }
 
 export default AdminDashboard;

@@ -1,4 +1,8 @@
-import { useState } from "react";
+import socket from "../socket";
+import {
+  useState,
+  useEffect
+} from "react";
 import "./TrackCase.css";
 import {
   FaSearch,
@@ -9,6 +13,9 @@ import {
   FaHome,
   FaRedo,
   FaClock,
+  FaPhone,
+  FaMapMarkerAlt,
+  FaUsers,
 } from "react-icons/fa";
 
 function TrackCase() {
@@ -18,6 +25,16 @@ function TrackCase() {
 
   const [report, setReport] =
     useState(null);
+
+  const [
+  nearbyVolunteers,
+  setNearbyVolunteers,
+  ] = useState([]);  
+
+  const [
+  trackingSubscribed,
+  setTrackingSubscribed,
+] = useState(false);  
 
   const [error, setError] =
     useState("");
@@ -53,8 +70,29 @@ function TrackCase() {
         );
       }
 
-      setReport(data.report);
-      console.log(
+   setReport(data.report);
+
+      if (
+      data.report.escalatedToVolunteers &&
+      data.report.status === "Pending"
+    ) {
+
+      fetchNearbyVolunteers(
+        data.report.trackingId
+      );
+
+    }
+
+    socket.emit(
+      "JOIN_TRACKING_ROOM",
+      data.report.trackingId
+    );
+
+    setTrackingSubscribed(
+      true
+    );
+
+    console.log(
       JSON.stringify(
         data.report,
         null,
@@ -71,13 +109,124 @@ function TrackCase() {
         "Unable to track case"
       );
 
-    } finally {
+   } finally {
 
       setLoading(false);
 
     }
 
   }
+
+async function fetchNearbyVolunteers(
+  trackingId
+) {
+
+  try {
+
+    const response =
+      await fetch(
+`http://localhost:5001/api/reports/${trackingId}/nearby-volunteers`
+      );
+
+    const data =
+      await response.json();
+
+    if (data.success) {
+
+      setNearbyVolunteers(
+        data.volunteers
+      );
+
+    }
+
+  } catch (error) {
+
+    console.error(error);
+
+  }
+
+}
+
+useEffect(() => {
+
+  if (
+    !trackingSubscribed
+  ) {
+    return;
+  }
+
+socket.on(
+  "CASE_UPDATED",
+  (updatedReport) => {
+
+    console.log(
+      "CASE_UPDATED RECEIVED",
+      updatedReport.status
+    );
+
+    console.log(
+      "LIVE UPDATE RECEIVED",
+      updatedReport
+    );
+
+    setReport(
+      updatedReport
+    );
+
+    if (
+      updatedReport.escalatedToVolunteers &&
+      updatedReport.status === "Pending"
+    ) {
+
+      fetchNearbyVolunteers(
+        updatedReport.trackingId
+      );
+
+    }
+
+  }
+);
+
+  socket.on(
+  "VOLUNTEER_LIST_UPDATED",
+  () => {
+
+    console.log(
+      "VOLUNTEER LIST UPDATED"
+    );
+
+   if (
+  report?.trackingId
+) {
+
+  fetchNearbyVolunteers(
+    report.trackingId
+  );
+
+}
+
+  }
+);
+
+return () => {
+
+  socket.off(
+    "CASE_UPDATED"
+  );
+
+  socket.off(
+    "VOLUNTEER_LIST_UPDATED"
+  );
+
+};
+
+
+
+}, [
+  trackingSubscribed,
+  report
+]);
+
 let progress = 25;
 
 if (report?.acceptedByNGO?.ngoName)
@@ -488,6 +637,78 @@ if (report?.rescuedAt)
                       </div>
 
                     </div>
+
+
+             {
+  report?.escalatedToVolunteers &&
+  report?.status === "Pending" &&
+  nearbyVolunteers.length > 0 && (
+
+    <div className="volunteer-help-card">
+
+      <div className="volunteer-help-header">
+
+        <FaUsers />
+
+        <h3>
+          Nearby Emergency Volunteers
+        </h3>
+
+      </div>
+
+      <p className="volunteer-help-text">
+
+        No NGO has accepted this rescue case yet.
+        You may contact nearby approved
+        emergency volunteers directly.
+
+      </p>
+
+      {
+        nearbyVolunteers.map(
+          (volunteer, index) => (
+
+            <div
+              key={index}
+              className="volunteer-contact-card"
+            >
+
+              <h4>
+                {volunteer.name}
+              </h4>
+
+              <div className="volunteer-detail">
+
+                <FaPhone />
+
+                <span>
+                  {volunteer.phoneNumber}
+                </span>
+
+              </div>
+
+              <div className="volunteer-detail">
+
+                <FaMapMarkerAlt />
+
+                <span>
+                  {volunteer.distance}
+                  {" "}
+                  km away
+                </span>
+
+              </div>
+
+            </div>
+
+          )
+        )
+      }
+
+    </div>
+
+  )
+}
 
                         <div className="tracking-actions">
 

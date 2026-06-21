@@ -1,0 +1,71 @@
+.admin-page{
+  padding:40px;
+  background:#f5f7f5;
+  min-height:100vh;
+  max-width:1200px;
+  margin:0 auto;
+}
+
+.ngo-card{
+  background:white;
+  padding:25px;
+  border-radius:20px;
+  margin-bottom:25px;
+
+  box-shadow:
+    0 8px 20px rgba(
+      0,
+      0,
+      0,
+      0.08
+    );
+}
+
+.ngo-card button{
+  margin-top:15px;
+  background:#1a7a4a;
+  color:white;
+  border:none;
+  padding:12px 20px;
+  border-radius:10px;
+  cursor:pointer;
+  font-weight:600;
+}
+
+.volunteer-proof-section{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:15px;
+  margin-top:15px;
+}
+
+.proof-image{
+  width:280px;
+  border-radius:12px;
+  object-fit:cover;
+}
+
+.approve-volunteer-btn{
+  background:#1a7a4a;
+  color:white;
+  border:none;
+  padding:12px 24px;
+  border-radius:10px;
+  cursor:pointer;
+  font-weight:600;
+}
+.status-approved{
+  color:#1a7a4a;
+  font-weight:700;
+  margin-left:8px;
+}
+
+
+@media (max-width:768px){
+
+  .proof-image{
+    width:100%;
+  }
+
+}

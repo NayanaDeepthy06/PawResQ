@@ -1,39 +1,294 @@
+import socket from "../socket";
 import "./VolunteerDashboard.css";
+import { useEffect, useState } from "react";
 
 function VolunteerDashboard() {
 
-  const volunteer =
-    JSON.parse(
-      localStorage.getItem(
-        "volunteer"
-      )
+  const [cases, setCases] =
+    useState([]);
+
+ const volunteer =
+  JSON.parse(
+    localStorage.getItem(
+      "volunteer"
+    ) || "{}"
+  );
+
+  useEffect(() => {
+
+    fetchCases();
+
+  }, []);
+
+  useEffect(() => {
+
+  socket.on(
+    "NEW_ESCALATED_CASE",
+    (newCase) => {
+
+      setCases(
+        (previousCases) => {
+
+          const alreadyExists =
+            previousCases.some(
+              (report) =>
+                report._id ===
+                newCase._id
+            );
+
+          if (
+            alreadyExists
+          ) {
+            return previousCases;
+          }
+
+          return [
+            newCase,
+            ...previousCases,
+          ];
+
+        }
+      );
+
+    }
+  );
+
+  return () => {
+
+    socket.off(
+      "NEW_ESCALATED_CASE"
     );
 
+  };
+
+}, []);
+
+  async function fetchCases() {
+
+    const response =
+      await fetch(
+        "http://localhost:5001/api/volunteer/escalated-cases"
+      );
+
+    const data =
+      await response.json();
+
+    setCases(
+      data.reports || []
+    );
+
+  }
+
+  async function acceptCase(
+    reportId
+  ) {
+
+    await fetch(
+
+      `http://localhost:5001/api/volunteer/accept-case/${reportId}`,
+
+      {
+        method: "PATCH",
+
+        headers: {
+          "Content-Type":
+            "application/json",
+        },
+
+        body: JSON.stringify({
+          volunteerId:
+            volunteer._id,
+
+          volunteerName:
+            volunteer.name,
+
+          volunteerPhone:
+            volunteer.phoneNumber,
+
+        })
+
+      }
+
+    );
+
+    fetchCases();
+
+  }
+  async function markRescued(
+  reportId
+) {
+
+  try {
+
+    await fetch(
+
+      `http://localhost:5001/api/volunteer/mark-rescued/${reportId}`,
+
+      {
+        method: "PATCH",
+      }
+
+    );
+
+    fetchCases();
+
+  } catch (error) {
+
+    console.error(error);
+
+  }
+
+}
+
+  
   return (
 
-    <div className="volunteer-dashboard">
+<div className="volunteer-dashboard">
 
-      <h1>
-        Welcome,
-        {" "}
-        {volunteer?.name}
-      </h1>
+  <div className="dashboard-header">
 
-      <div className="dashboard-card">
+    <h1>
+      Volunteer Dashboard
+    </h1>
+
+    <p>
+      Welcome,
+      {" "}
+      {volunteer?.name}
+    </p>
+
+  </div>
+
+  {
+    cases.length === 0 ? (
+
+      <div className="empty-state">
 
         <h2>
-          Emergency Cases
+          No Rescue Cases
         </h2>
 
         <p>
-          No emergency cases available.
+          New emergency cases
+          will appear here.
         </p>
 
       </div>
 
-    </div>
+    ) : (
 
-  );
+      <div className="cases-grid">
+
+        {
+          cases.map(
+            (report) => (
+
+              <div
+                key={report._id}
+                className="case-card"
+              >
+
+                <div
+                  className={`priority-badge ${
+                    report.priorityLevel ===
+                    "Emergency"
+                      ? "priority-emergency"
+                      : report.priorityLevel ===
+                        "Urgent"
+                      ? "priority-urgent"
+                      : "priority-important"
+                  }`}
+                >
+
+                  {
+                    report.priorityLevel
+                  }
+
+                </div>
+
+                {
+                  report.imageUrl && (
+                    <img
+                      src={report.imageUrl}
+                      alt="Injured Animal"
+                      className="animal-image"
+                    />
+                  )
+                }
+
+                <h3>
+                  {report.trackingId}
+                </h3>
+
+                <p>
+                  <strong>
+                    Animal:
+                  </strong>
+                  {" "}
+                  {report.animalType}
+                </p>
+
+                <p>
+                  <strong>
+                    Location:
+                  </strong>
+                  {" "}
+                  {report.location}
+                </p>
+
+                <p>
+                  <strong>
+                    Description:
+                  </strong>
+                  {" "}
+                  {report.injuryDescription}
+                </p>
+
+                {
+                  report.status ===
+                  "Volunteer Assigned" ? (
+
+                    <button
+                      className="rescued-btn"
+                      onClick={() =>
+                        markRescued(
+                          report._id
+                        )
+                      }
+                    >
+                      Mark As Rescued
+                    </button>
+
+                  ) : (
+
+                    <button
+                      className="accept-btn"
+                      onClick={() =>
+                        acceptCase(
+                          report._id
+                        )
+                      }
+                    >
+                      Accept Rescue
+                    </button>
+
+                  )
+                }
+
+              </div>
+
+            )
+          )
+        }
+
+      </div>
+
+    )
+  }
+
+</div>
+
+);
 
 }
 

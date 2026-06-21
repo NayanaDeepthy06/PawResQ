@@ -1,17 +1,15 @@
 .volunteer-register-page{
   min-height:100vh;
-  display:flex;
-  justify-content:center;
-  align-items:center;
   background:#f4f7f5;
+  padding:40px 20px;
 }
 
 .volunteer-register-card{
-  width:500px;
+  max-width:900px;
+  margin:auto;
   background:white;
   padding:40px;
-  border-radius:20px;
-  text-align:center;
+  border-radius:24px;
 
   box-shadow:
     0 10px 30px rgba(
@@ -23,5 +21,73 @@
 }
 
 .volunteer-register-card h1{
+  text-align:center;
   color:#1a7a4a;
+  margin-bottom:30px;
+}
+
+.volunteer-register-card form{
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+}
+
+.volunteer-register-card input,
+.volunteer-register-card select{
+  padding:14px;
+  border:1px solid #ddd;
+  border-radius:12px;
+  font-size:16px;
+}
+
+.location-heading{
+  margin-top:15px;
+  color:#1f2937;
+}
+
+.location-info{
+  background:#f8fafc;
+  padding:16px;
+  border-radius:12px;
+}
+
+.location-info p{
+  margin:8px 0;
+  font-weight:600;
+}
+
+.confirm-location{
+  display:flex;
+  gap:10px;
+  align-items:flex-start;
+  font-size:15px;
+}
+
+.volunteer-register-card button{
+  background:#1a7a4a;
+  color:white;
+  border:none;
+  padding:15px;
+  border-radius:12px;
+  font-size:16px;
+  font-weight:700;
+  cursor:pointer;
+}
+
+.volunteer-register-card button:hover{
+  opacity:0.95;
+}
+
+.volunteer-register-card p{
+  text-align:center;
+  margin-top:15px;
+  font-weight:600;
+}
+
+@media(max-width:640px){
+
+  .volunteer-register-card{
+    padding:24px;
+  }
+
 }

@@ -1,0 +1,182 @@
+.adoption-modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.45);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  z-index:999;
+  padding:20px;
+}
+
+.adoption-form-card{
+
+  width:100%;
+  max-width:800px;
+  background:white;
+  border-radius:24px;
+  padding:32px;
+  box-shadow:
+    0 25px 60px rgba(
+      0,
+      0,
+      0,
+      0.15
+    );
+
+  max-height:90vh;
+  overflow-y:auto;
+
+}
+
+.adoption-form-card h2{
+
+  text-align:center;
+  color:#166534;
+  margin-bottom:24px;
+
+}
+
+.adoption-form-card form{
+
+  display:grid;
+  grid-template-columns:
+    repeat(
+      2,
+      1fr
+    );
+
+  gap:16px;
+
+}
+
+.adoption-form-card input,
+.adoption-form-card select,
+.adoption-form-card textarea{
+
+  width:100%;
+  padding:14px;
+  border:1px solid #d1d5db;
+  border-radius:12px;
+  font-size:15px;
+  outline:none;
+  transition:.25s;
+}
+
+.adoption-form-card input:focus,
+.adoption-form-card select:focus,
+.adoption-form-card textarea:focus{
+
+  border-color:#16a34a;
+  box-shadow:
+    0 0 0 4px
+    rgba(
+      22,
+      163,
+      74,
+      0.12
+    );
+
+}
+
+.adoption-form-card textarea{
+  resize:none;
+  min-height:120px;
+  grid-column:span 2;
+
+}
+
+.adoption-form-card input[type="file"]{
+
+  grid-column:span 2;
+  padding:12px;
+
+}
+
+.form-buttons{
+
+  grid-column:span 2;
+  display:flex;
+  justify-content:flex-end;
+  gap:12px;
+  margin-top:10px;
+
+}
+
+.submit-btn{
+
+  background:#16a34a;
+  color:white;
+  border:none;
+  padding:14px 22px;
+  border-radius:12px;
+  font-weight:700;
+  cursor:pointer;
+  transition:.25s;
+}
+
+.submit-btn:hover{
+
+  transform:translateY(-2px);
+
+}
+
+.cancel-btn{
+
+  background:#f3f4f6;
+  color:#111827;
+  border:none;
+  padding:14px 22px;
+  border-radius:12px;
+  font-weight:700;
+  cursor:pointer;
+
+}
+
+.image-preview-grid{
+
+  grid-column:span 2;
+
+  display:grid;
+
+  grid-template-columns:
+    repeat(
+      auto-fill,
+      minmax(
+        120px,
+        1fr
+      )
+    );
+
+  gap:12px;
+}
+
+.preview-image{
+
+  width:100%;
+  height:120px;
+  object-fit:cover;
+  border-radius:12px;
+  border:2px solid #e5e7eb;
+}
+
+@media(max-width:768px){
+
+  .adoption-form-card form{
+    grid-template-columns:1fr;
+
+  }
+
+  .adoption-form-card textarea,
+  .adoption-form-card input[type="file"],
+  .form-buttons{
+    grid-column:span 1;
+
+  }
+
+  .form-buttons{
+    flex-direction:column;
+
+  }
+
+}

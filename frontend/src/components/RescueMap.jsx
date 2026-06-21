@@ -207,7 +207,13 @@ function RescueMap({
             </Popup>
           </Marker>
         )}
-        {reports.map((report) => {
+        {reports
+  .filter(
+    (report) =>
+      report.status !== "Rescued" &&
+      report.status !== "Closed"
+  )
+  .map((report) => {
   if (!report.latitude || !report.longitude) {
     return null;
   }

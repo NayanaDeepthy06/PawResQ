@@ -1,3 +1,4 @@
+
 import {
   FaMapMarkerAlt,
   FaCheckCircle,
@@ -7,6 +8,7 @@ import {
 } from "react-icons/fa";
 
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "../App.css";
 import RescueMap from "../components/RescueMap";
 
@@ -59,10 +61,21 @@ function HomePage() {
   const fileInputRef = useRef(null);
   const mapSectionRef = useRef(null);
   const locationInputRef = useRef(null);
+  const reportFormRef = useRef(null);
   const [selectedPosition, setSelectedPosition] = useState(null);
   const [detectedAddress, setDetectedAddress] = useState("");
   const [customAnimalType, setCustomAnimalType] = useState("");
-  
+  const navigate = useNavigate();
+
+ function scrollToReportForm() {
+
+  reportFormRef.current?.scrollIntoView({
+    behavior: "smooth",
+    block: "center",
+  });
+
+}
+
 useEffect(() => {
   if (selectedPosition) {
     setReport((currentReport) => ({
@@ -403,8 +416,28 @@ function formatDate(dateString) {
           with nearby NGOs, and support faster rescue coordination.
         </p>
 
-        <button className="primary-button">Report Injured Animal</button>
-        <form className="report-form" onSubmit={handleSubmit}>
+       <div className="hero-buttons">
+
+ <button
+  className="primary-button"
+  onClick={scrollToReportForm}
+>
+  Report Injured Animal
+</button>
+
+  <button
+    className="volunteer-button"
+    onClick={() => navigate("/volunteer-auth")}
+  >
+    Volunteer With Us
+  </button>
+
+</div>
+       <form
+        ref={reportFormRef}
+        className="report-form"
+        onSubmit={handleSubmit}
+      >
             <div className="form-header">
               <h2>Report Injured Animal</h2>
               <p>
@@ -926,6 +959,98 @@ function formatDate(dateString) {
     </article>
   ))}
 </div>
+
+<section className="quick-actions-section">
+
+  <h2>
+    Explore PawResQ
+  </h2>
+
+  <div className="quick-actions-grid">
+
+    <div className="quick-card">
+
+      <h3>
+        Want To Adopt An Animal?
+      </h3>
+
+      <p>
+        Browse animals looking for a loving home.
+      </p>
+
+      <button
+        onClick={() =>
+          navigate("/adoption")
+        }
+      >
+        Browse Adoptions
+      </button>
+
+    </div>
+
+    <div className="quick-card">
+
+      <h3>
+        Want To Post An Animal For Adoption?
+      </h3>
+
+      <p>
+        Help rescued animals find a forever family.
+      </p>
+
+      <button
+        onClick={() =>
+          navigate("/adoption")
+        }
+      >
+        Create Adoption Post
+      </button>
+
+    </div>
+
+    <div className="quick-card">
+
+      <h3>
+        Are You An NGO?
+      </h3>
+
+      <p>
+        View and manage rescue cases.
+      </p>
+
+      <button
+        onClick={() =>
+          navigate("/ngo-auth")
+        }
+      >
+        NGO Dashboard
+      </button>
+
+    </div>
+
+    <div className="quick-card">
+
+      <h3>
+        Want To Register Your NGO?
+      </h3>
+
+      <p>
+        Join PawResQ and start helping animals.
+      </p>
+
+      <button
+        onClick={() =>
+          navigate("/ngo-auth")
+        }
+      >
+        Register NGO
+      </button>
+
+    </div>
+
+  </div>
+
+</section>
 
 <p className="map-instruction">
   <FaMapPin />

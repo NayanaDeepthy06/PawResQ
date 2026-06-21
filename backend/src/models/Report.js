@@ -129,9 +129,42 @@ priorityLevel: {
   enum: ["Routine", "Important", "Urgent", "Emergency"],
   default: "Routine",
 },
+escalatedToVolunteers: {
+  type: Boolean,
+  default: false,
+},
 trackingId: {
   type: String,
   unique: true,
+},
+aiAnimal: {
+  type: String,
+  default: "",
+},
+
+aiAnimalConfidence: {
+  type: Number,
+  default: 0,
+},
+
+aiInjury: {
+  type: String,
+  default: "",
+},
+
+aiInjuryConfidence: {
+  type: Number,
+  default: 0,
+},
+
+aiSeverity: {
+  type: String,
+  default: "",
+},
+
+ngoAlertRequired: {
+  type: Boolean,
+  default: false,
 },
 
   },

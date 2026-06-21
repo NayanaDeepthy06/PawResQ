@@ -1,6 +1,9 @@
+
 import { createServer } from "http";
 import { Server } from "socket.io";
 import express from "express";
+import axios from "axios";
+import FormData from "form-data";
 import cors from "cors";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
@@ -10,6 +13,7 @@ import verifyNGO from "./middleware/verifyNGO.js";
 import generateTrackingId from "./utils/generateTrackingId.js";
 import bcrypt from "bcryptjs";
 import NGO from "./models/NGO.js";
+import Adoption from "./models/Adoption.js";
 import Volunteer from "./models/Volunteer.js";
 import calculateDistance from "./utils/calculateDistance.js";
 import jwt from "jsonwebtoken";
@@ -191,8 +195,134 @@ if (injuryDescription.trim().length < 15) {
       "Please provide a more detailed injury description.",
   });
 } 
-const severityPrediction = predictSeverity(injuryDescription);
-const priority = calculatePriority(severityPrediction.severityScore);
+
+let aiResult = {
+
+  animal: "",
+  animal_confidence: 0,
+
+  injury: "",
+  injury_confidence: 0,
+
+  severity: "",
+
+  ngo_alert_required: false,
+
+};
+
+try {
+
+  if (req.file?.path) {
+
+    const formData =
+      new FormData();
+
+    const imageResponse =
+      await axios.get(
+        req.file.path,
+        {
+          responseType:
+            "arraybuffer",
+        }
+      );
+
+    formData.append(
+      "image",
+      Buffer.from(
+        imageResponse.data
+      ),
+      "animal.jpg"
+    );
+
+    formData.append(
+      "description",
+      injuryDescription
+    );
+
+    const aiResponse =
+      await axios.post(
+
+        "http://127.0.0.1:5000/predict",
+
+        formData,
+
+        {
+          headers:
+            formData.getHeaders(),
+        }
+
+      );
+
+    aiResult =
+      aiResponse.data;
+
+    console.log(
+      "AI RESULT:",
+      aiResult
+    );
+
+  }
+
+} catch (error) {
+
+  console.error(
+    "AI SERVICE ERROR:"
+  );
+
+  console.error(
+    error.message
+  );
+
+}
+
+const severityPrediction =
+  aiResult.severity
+
+    ? {
+
+        severity:
+
+          aiResult.severity === "CRITICAL"
+            ? "Critical"
+
+          : aiResult.severity === "HIGH"
+            ? "High"
+
+          : aiResult.severity === "MEDIUM"
+            ? "Medium"
+
+          : "Low",
+
+        severityScore:
+
+          aiResult.severity === "CRITICAL"
+            ? 90
+
+          : aiResult.severity === "HIGH"
+            ? 70
+
+          : aiResult.severity === "MEDIUM"
+            ? 45
+
+          : 20,
+
+        severityReasons: [
+          `AI detected ${aiResult.injury}`,
+        ],
+
+      }
+
+    : predictSeverity(
+        injuryDescription
+      );
+      
+
+      const priority =
+  calculatePriority(
+    severityPrediction.severityScore
+  );
+
+
 const trackingId = generateTrackingId();
 const report = await Report.create({
   trackingId,
@@ -209,6 +339,23 @@ const report = await Report.create({
   severityReasons: severityPrediction.severityReasons,
   priorityScore : priority.priorityScore,
   priorityLevel:priority.priorityLevel,
+  aiAnimal:
+  aiResult.animal || "",
+
+aiAnimalConfidence:
+  aiResult.animal_confidence || 0,
+
+aiInjury:
+  aiResult.injury || "",
+
+aiInjuryConfidence:
+  aiResult.injury_confidence || 0,
+
+aiSeverity:
+  aiResult.severity || "",
+
+ngoAlertRequired:
+  aiResult.ngo_alert_required || false,
 });
 console.log(
   "REPORT LOCATION:",
@@ -390,18 +537,23 @@ app.patch(
           new Date();
       }
 
-      if (
-        status ===
-        "Volunteer Assigned"
-      ) {
-        updatedFields.volunteerAssignedAt =
-          new Date();
-      }
+     if (
+      status ===
+      "Volunteer Assigned"
+    ) {
 
-      if (status === "Rescued") {
-        updatedFields.rescuedAt =
-          new Date();
-      }
+      updatedFields.volunteerAssignedAt =
+        new Date();
+
+    }
+      
+    if (status === "Rescued") {
+
+      updatedFields.rescuedAt =
+        new Date();
+
+    }
+   
       const report =
       await Report.findById(id);
 
@@ -433,28 +585,44 @@ app.patch(
           returnDocument: "after",
         }
         );
+       
         if (
-        status ===
-        "Volunteer Assigned"
-      ) {
+          status ===
+          "Volunteer Assigned"
+        ) {
 
-        io.emit(
-          "VOLUNTEER_ASSIGNED",
-          updatedReport
-        );
+          io.emit(
+            "VOLUNTEER_ASSIGNED",
+            updatedReport
+          );
 
-      }
-            if (
-        status ===
-        "Rescued"
-      ) {
+          io.to(
+            `tracking_${updatedReport.trackingId}`
+          ).emit(
+            "CASE_UPDATED",
+            updatedReport
+          );
 
-        io.emit(
-          "CASE_RESCUED",
-          updatedReport
-        );
+        }
 
-      }
+        if (
+          status ===
+          "Rescued"
+        ) {
+
+          io.emit(
+            "CASE_RESCUED",
+            updatedReport
+          );
+
+          io.to(
+            `tracking_${updatedReport.trackingId}`
+          ).emit(
+            "CASE_UPDATED",
+            updatedReport
+          );
+
+        }
 
       res.status(200).json({
         success: true,
@@ -534,6 +702,13 @@ app.patch(
       report
     );
 
+    io.to(
+      `tracking_${report.trackingId}`
+    ).emit(
+      "CASE_UPDATED",
+      report
+    );
+
       res.json({
         success: true,
         report,
@@ -599,6 +774,18 @@ app.patch(
 
       await report.save();
 
+              io.emit(
+          "VOLUNTEER_ASSIGNED",
+          report
+        );
+
+        io.to(
+          `tracking_${report.trackingId}`
+        ).emit(
+          "CASE_UPDATED",
+          report
+        );
+
       res.json({
         success: true,
         message:
@@ -662,6 +849,105 @@ app.get(
       });
 
     }
+  }
+);
+
+app.get(
+  "/api/reports/:trackingId/nearby-volunteers",
+  async (req, res) => {
+
+    try {
+
+      const report =
+        await Report.findOne({
+          trackingId:
+            req.params.trackingId,
+        });
+
+      if (!report) {
+
+        return res.status(404).json({
+          success: false,
+          message:
+            "Report not found",
+        });
+
+      }
+
+      const volunteers =
+        await Volunteer.find({
+          verificationStatus:
+            "Approved",
+        }).select(
+          "name phoneNumber latitude longitude"
+        );
+
+      const nearbyVolunteers =
+        volunteers
+          .map((volunteer) => {
+
+            const distance =
+              calculateDistance(
+
+                report.latitude,
+                report.longitude,
+
+                volunteer.latitude,
+                volunteer.longitude
+
+              );
+
+            return {
+
+              name:
+                volunteer.name,
+
+              phoneNumber:
+                volunteer.phoneNumber,
+
+              distance:
+                Number(
+                  distance.toFixed(1)
+                ),
+
+            };
+
+          })
+
+          .filter(
+            (volunteer) =>
+              volunteer.distance <= 30
+          )
+
+          .sort(
+            (a, b) =>
+              a.distance - b.distance
+          );
+
+      res.json({
+
+        success: true,
+
+        volunteers:
+          nearbyVolunteers,
+
+      });
+
+    } catch (error) {
+
+      console.error(error);
+
+      res.status(500).json({
+
+        success: false,
+
+        message:
+          "Failed to fetch nearby volunteers",
+
+      });
+
+    }
+
   }
 );
 
@@ -1127,9 +1413,14 @@ app.patch(
           },
 
           {
-            new: true,
+            returnDocument:"after",
           }
         );
+
+        io.emit(
+        "VOLUNTEER_LIST_UPDATED"
+      );
+
 
       if (!volunteer) {
 
@@ -1286,6 +1577,336 @@ app.post(
   }
 );
 
+app.get(
+  "/api/volunteer/escalated-cases",
+  async (req, res) => {
+
+    try {
+    const reports =
+    await Report.find({
+
+      escalatedToVolunteers:
+        true,
+
+      status: {
+        $in: [
+          "Pending",
+          "Volunteer Assigned",
+        ],
+      },
+
+    }).sort({
+    createdAt: -1,
+  });
+
+      res.json({
+        success: true,
+        reports,
+      });
+
+    } catch (error) {
+
+      res.status(500).json({
+        success: false,
+      });
+
+    }
+
+  }
+);
+
+app.patch(
+  "/api/volunteer/accept-case/:id",
+  async (req, res) => {
+
+    try {
+
+      const {
+        volunteerId,
+        volunteerName,
+        volunteerPhone,
+      } = req.body;
+
+      const report =
+  await Report.findOneAndUpdate(
+
+    {
+      _id: req.params.id,
+      status: "Pending",
+    },
+
+    {
+      assignedVolunteer: {
+        volunteerId,
+        volunteerName,
+        volunteerPhone,
+        volunteerType:
+          "Emergency Volunteer",
+      },
+
+      volunteerAssignedAt:
+        new Date(),
+
+      status:
+        "Volunteer Assigned",
+    },
+
+    {
+      returnDocument: "after",
+    }
+  );
+
+if (!report) {
+
+  return res.status(400).json({
+    success: false,
+    message:
+      "Case already assigned",
+  });
+
+}
+
+io.emit(
+  "VOLUNTEER_ASSIGNED",
+  report
+);
+
+io.to(
+  `tracking_${report.trackingId}`
+).emit(
+  "CASE_UPDATED",
+  report
+);
+
+    res.json({
+        success: true,
+        report,
+      });
+
+    } catch (error) {
+
+      console.error(error);
+
+      res.status(500).json({
+        success: false,
+      });
+
+    }
+
+  }
+);
+
+app.patch(
+  "/api/volunteer/mark-rescued/:id",
+  async (req, res) => {
+
+    try {
+
+      const report =
+        await Report.findByIdAndUpdate(
+
+          req.params.id,
+
+          {
+            status: "Rescued",
+            rescuedAt: new Date(),
+          },
+
+          {
+             returnDocument: "after",
+          }
+        );
+
+                console.log(
+          "EMITTING RESCUED EVENT:",
+          report.trackingId
+        );
+
+        io.emit(
+      "CASE_RESCUED",
+      report
+    );
+    io.to(
+      `tracking_${report.trackingId}`
+    ).emit(
+      "CASE_UPDATED",
+      report
+    );
+
+      res.json({
+        success: true,
+        report,
+      });
+
+    } catch (error) {
+
+      console.error(error);
+
+      res.status(500).json({
+        success: false,
+      });
+
+    }
+
+  }
+);
+app.post(
+  "/api/adoptions",
+  upload.array(
+  "images",
+  5
+),
+  async (req, res) => {
+
+    try {
+
+      const adoption =
+        await Adoption.create({
+
+          animalName:
+            req.body.animalName,
+
+          animalType:
+            req.body.animalType,
+
+          breed:
+            req.body.breed,
+
+          age:
+            req.body.age,
+
+          gender:
+            req.body.gender,
+
+          vaccinationStatus:
+            req.body.vaccinationStatus,
+
+          foodHabits:
+            req.body.foodHabits,
+
+          petNature:
+            req.body.petNature,
+
+          description:
+            req.body.description,
+
+          location:
+            req.body.location,
+
+          contactNumber:
+          req.body.contactNumber,
+
+            images:
+            req.files?.map(
+              (file) => file.path
+            ) || [],
+
+        });
+        
+        io.emit(
+      "NEW_ADOPTION_POST",
+      adoption
+    );
+
+      res.json({
+        success: true,
+        adoption,
+      });
+
+    } catch (error) {
+
+      console.error(error);
+
+      res.status(500).json({
+        success: false,
+      });
+
+    }
+
+  }
+);
+
+app.get(
+  "/api/adoptions",
+  async (req, res) => {
+
+    try {
+
+      const adoptions =
+        await Adoption.find()
+        .sort({
+          createdAt: -1,
+        });
+
+      res.json({
+        success: true,
+        adoptions,
+      });
+
+    } catch (error) {
+
+      console.error(error);
+
+      res.status(500).json({
+        success: false,
+        message:
+          "Failed to fetch adoption posts",
+      });
+
+    }
+
+  }
+);
+
+app.patch(
+  "/api/adoptions/:id/status",
+  async (req, res) => {
+
+    try {
+
+      const adoption =
+        await Adoption.findByIdAndUpdate(
+
+          req.params.id,
+
+          {
+            adoptionStatus:
+              req.body.status,
+          },
+
+          {
+            new: true,
+          }
+
+        );
+
+      io.emit(
+        "ADOPTION_UPDATED",
+        adoption
+      );
+
+      res.json({
+
+        success: true,
+
+        adoption,
+
+      });
+
+    } catch (error) {
+
+      console.error(error);
+
+      res.status(500).json({
+
+        success: false,
+
+      });
+
+    }
+
+  }
+);
 
 const server =
   createServer(app);
@@ -1330,6 +1951,21 @@ io.on("connection", (socket) => {
 
   }
 );
+socket.on(
+  "JOIN_TRACKING_ROOM",
+  (trackingId) => {
+
+    socket.join(
+      `tracking_${trackingId}`
+    );
+
+    console.log(
+      "Citizen Joined Tracking Room:",
+      trackingId
+    );
+
+  }
+);
   socket.on(
     "disconnect",
     () => {
@@ -1342,6 +1978,105 @@ io.on("connection", (socket) => {
     }
   );
 });
+
+setInterval(
+  async () => {
+
+    try {
+
+      const pendingReports =
+        await Report.find({
+          status: "Pending",
+          escalatedToVolunteers: false,
+        });
+
+            console.log(
+        "Pending Reports Found:",
+        pendingReports.length
+      );
+
+      for (
+        const report of pendingReports
+      ) {
+
+        const ageInMinutes =
+          (
+            Date.now() -
+            new Date(
+              report.createdAt
+            ).getTime()
+          ) /
+          (1000 * 60);
+          console.log(
+          "CHECKING:",
+          report.trackingId,
+          report.priorityLevel,
+          report.status,
+          report.escalatedToVolunteers,
+          ageInMinutes
+        );
+
+        let shouldEscalate =
+          false;
+
+        if (
+          report.priorityLevel ===
+            "Emergency" &&
+          ageInMinutes >= 2
+        ) {
+          shouldEscalate =
+            true;
+        }
+
+        if (
+          report.priorityLevel ===
+            "Important" &&
+          ageInMinutes >= 3
+        ) {
+          shouldEscalate =
+            true;
+        }
+
+        if (
+          shouldEscalate
+        ) {
+
+          report.escalatedToVolunteers = true;
+
+          await report.save();
+
+                io.emit(
+              "NEW_ESCALATED_CASE",
+              report
+            );
+
+          io.emit(
+            "SPECIAL_VOLUNTEER_CASE_AVAILABLE",
+            report
+          );
+
+          console.log(
+            `Escalated Case: ${report.trackingId}`
+          );
+
+
+        }
+
+      }
+
+    } catch (error) {
+
+      console.error(
+        "Volunteer Escalation Error:",
+        error
+      );
+
+    }
+
+  },
+
+  60000
+);
 
 server.listen(PORT, () => {
 

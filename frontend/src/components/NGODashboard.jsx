@@ -802,6 +802,59 @@ const currentNGO =
                 <p className="case-description">
                     {report.injuryDescription}
                 </p>
+
+                <div className="ai-analysis-card">
+
+  <h4>
+    AI Analysis
+  </h4>
+
+  <p>
+    <strong>Animal:</strong>
+    {" "}
+    {report.aiAnimal || "Not Available"}
+  </p>
+
+  <p>
+    <strong>Confidence:</strong>
+    {" "}
+    {report.aiAnimalConfidence
+      ? `${Math.round(
+          report.aiAnimalConfidence * 100
+        )}%`
+      : "N/A"}
+  </p>
+
+  <p>
+    <strong>Detected Injury:</strong>
+    {" "}
+    {report.aiInjury || "Not Available"}
+  </p>
+
+  <p>
+    <strong>Injury Confidence:</strong>
+    {" "}
+    {report.aiInjuryConfidence
+      ? `${Math.round(
+          report.aiInjuryConfidence * 100
+        )}%`
+      : "N/A"}
+  </p>
+
+  <p>
+    <strong>AI Severity:</strong>
+    {" "}
+    <span
+      className={`ai-severity-badge ${
+        report.aiSeverity?.toLowerCase()
+      }`}
+    >
+      {report.aiSeverity || "N/A"}
+    </span>
+  </p>
+
+</div>
+
               <div className="case-timeline">
 
                 <p>

@@ -14,7 +14,7 @@ import NGODashboard from "./components/NGODashboard";
 import VolunteerLogin from "./pages/VolunteerLogin";
 import VolunteerRegister from "./pages/VolunteerRegister";
 import VolunteerDashboard from "./pages/VolunteerDashboard";
-
+import VolunteerAuth from "./pages/VolunteerAuth";
 
 function App() {
   return (
@@ -36,6 +36,11 @@ function App() {
           path="/ngo-auth"
           element={<NGOAuth />}
         />
+
+        <Route
+        path="/volunteer-auth"
+        element={<VolunteerAuth />}
+      />
 
         <Route
           path="/admin"

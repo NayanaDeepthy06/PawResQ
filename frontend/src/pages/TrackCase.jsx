@@ -58,7 +58,7 @@ function TrackCase() {
 
       const response =
         await fetch(
-          `http://localhost:5001/api/reports/track/${trackingId}`
+          `https://pawresq-api.onrender.com/api/reports/track/${trackingId}`
         );
 
       const data =
@@ -125,7 +125,7 @@ async function fetchNearbyVolunteers(
 
     const response =
       await fetch(
-`http://localhost:5001/api/reports/${trackingId}/nearby-volunteers`
+`https://pawresq-api.onrender.com/api/reports/${trackingId}/nearby-volunteers`
       );
 
     const data =

@@ -136,7 +136,7 @@ for (
       const response =
         await fetch(
 
-          "http://localhost:5001/api/adoptions",
+          "https://pawresq-api.onrender.com/api/adoptions",
 
           {
 

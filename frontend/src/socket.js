@@ -1,7 +1,7 @@
 import { io } from "socket.io-client";
 
 const socket = io(
-  "http://localhost:5001"
+  "https://pawresq-api.onrender.com"
 );
 
 export default socket;

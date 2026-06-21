@@ -142,7 +142,7 @@ if (
   try {
     const response =
       await fetch(
-        "http://localhost:5001/api/ngo/register",
+        "https://pawresq-api.onrender.com/api/ngo/register",
         {
           method: "POST",
 
@@ -202,7 +202,7 @@ async function handleLogin(
 
     const response =
       await fetch(
-        "http://localhost:5001/api/ngo/login",
+        "https://pawresq-api.onrender.com/api/ngo/login",
         {
           method: "POST",
 

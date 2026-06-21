@@ -189,7 +189,7 @@ return () => {
     async function fetchReports() {
       try {
         const response = await fetch(
-          "http://localhost:5001/api/reports"
+          "https://pawresq-api.onrender.com/api/reports"
         );
 
         const data = await response.json();
@@ -266,7 +266,7 @@ async function updateRescueStatus(
   try {
 
     const response = await fetch(
-      `http://localhost:5001/api/reports/${reportId}/status`,
+      `https://pawresq-api.onrender.com/api/reports/${reportId}/status`,
       {
         method: "PATCH",
 
@@ -324,7 +324,7 @@ async function acceptRescueCase(
 
     const response =
       await fetch(
-        `http://localhost:5001/api/reports/${reportId}/accept`,
+        `https://pawresq-api.onrender.com/api/reports/${reportId}/accept`,
         {
           method: "PATCH",
 
@@ -389,7 +389,7 @@ async function assignVolunteer() {
 
     const response =
       await fetch(
-        `http://localhost:5001/api/reports/${selectedReportId}/assign-volunteer`,
+        `https://pawresq-api.onrender.com/api/reports/${selectedReportId}/assign-volunteer`,
         {
           method: "PATCH",
 

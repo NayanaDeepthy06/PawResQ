@@ -104,7 +104,7 @@ function RescueMap({
       async function fetchReports() {
       try {
         const response = await fetch(
-          "http://localhost:5001/api/reports"
+          "https://pawresq-api.onrender.com/api/reports"
         );
 
         const data = await response.json();

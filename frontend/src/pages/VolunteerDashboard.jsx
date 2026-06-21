@@ -67,7 +67,7 @@ function VolunteerDashboard() {
 
     const response =
       await fetch(
-        "http://localhost:5001/api/volunteer/escalated-cases"
+        "https://pawresq-api.onrender.com/api/volunteer/escalated-cases"
       );
 
     const data =
@@ -85,7 +85,7 @@ function VolunteerDashboard() {
 
     await fetch(
 
-      `http://localhost:5001/api/volunteer/accept-case/${reportId}`,
+      `https://pawresq-api.onrender.com/api/volunteer/accept-case/${reportId}`,
 
       {
         method: "PATCH",
@@ -122,7 +122,7 @@ function VolunteerDashboard() {
 
     await fetch(
 
-      `http://localhost:5001/api/volunteer/mark-rescued/${reportId}`,
+      `https://pawresq-api.onrender.com/api/volunteer/mark-rescued/${reportId}`,
 
       {
         method: "PATCH",

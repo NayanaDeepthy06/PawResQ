@@ -38,7 +38,7 @@ const [
 
       const response =
         await fetch(
-          "http://localhost:5001/api/admin/pending-ngos"
+          "https://pawresq-api.onrender.com/api/admin/pending-ngos"
         );
 
       const data =
@@ -58,7 +58,7 @@ const [
 
     const response =
       await fetch(
-        "http://localhost:5001/api/admin/approved-ngos"
+        "https://pawresq-api.onrender.com/api/admin/approved-ngos"
       );
 
     const data =
@@ -85,7 +85,7 @@ const [
 
       const response =
         await fetch(
-          `http://localhost:5001/api/admin/ngo/${ngoId}/approve`,
+          `https://pawresq-api.onrender.com/api/admin/ngo/${ngoId}/approve`,
           {
             method: "PATCH",
           }
@@ -115,7 +115,7 @@ const [
 
     const response =
       await fetch(
-        "http://localhost:5001/api/admin/pending-volunteers"
+        "https://pawresq-api.onrender.com/api/admin/pending-volunteers"
       );
 
     const data =
@@ -143,7 +143,7 @@ async function fetchApprovedVolunteers() {
 
     const response =
       await fetch(
-        "http://localhost:5001/api/admin/approved-volunteers"
+        "https://pawresq-api.onrender.com/api/admin/approved-volunteers"
       );
 
     const data =
@@ -174,7 +174,7 @@ async function approveVolunteer(
     const response =
       await fetch(
 
-        `http://localhost:5001/api/admin/approve-volunteer/${volunteerId}`,
+        `https://pawresq-api.onrender.com/api/admin/approve-volunteer/${volunteerId}`,
 
         {
           method: "PATCH",

@@ -142,7 +142,7 @@ function VolunteerRegister() {
 
         const response =
           await fetch(
-            "http://localhost:5001/api/volunteer/register",
+            "https://pawresq-api.onrender.com/api/volunteer/register",
             {
               method: "POST",
               body: data,

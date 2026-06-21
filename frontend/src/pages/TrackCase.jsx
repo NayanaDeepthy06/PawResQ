@@ -3,7 +3,7 @@ import {
   useState,
   useEffect
 } from "react";
-import "./TrackCase.css";
+import "./Trackcase.css";
 import {
   FaSearch,
   FaHeartbeat,

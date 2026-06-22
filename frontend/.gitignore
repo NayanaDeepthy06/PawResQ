@@ -9,6 +9,7 @@ lerna-debug.log*
 
 # Local env file only - do not commit
 .env.*
+.env
 node_modules
 dist
 dist-ssr

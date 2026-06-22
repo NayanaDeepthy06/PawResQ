@@ -4,6 +4,7 @@ import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
 import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
 import { useEffect, useState } from "react";
+import { ENDPOINTS } from "../config";
 
 import {
   MapContainer,
@@ -104,7 +105,7 @@ function RescueMap({
       async function fetchReports() {
       try {
         const response = await fetch(
-          "https://pawresq-api.onrender.com/api/reports"
+          ENDPOINTS.REPORT_CREATE
         );
 
         const data = await response.json();

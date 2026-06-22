@@ -1,5 +1,6 @@
 import "./CreateAdoptionPost.css";
 import { useState } from "react";
+import { ENDPOINTS } from "../config";
 
 function CreateAdoptionPost({ onClose, onSuccess }) {
 
@@ -136,7 +137,7 @@ for (
       const response =
         await fetch(
 
-          "https://pawresq-api.onrender.com/api/adoptions",
+              ENDPOINTS.ADOPTION_CREATE,
 
           {
 

@@ -2,6 +2,7 @@ import "./AdoptionPage.css";
 import { useEffect, useState } from "react";
 import { FaPlus, FaMapMarkerAlt } from "react-icons/fa";
 import CreateAdoptionPost from "./CreateAdoptionPost";
+import { ENDPOINTS } from "../config";
 
 function AdoptionPage() {
 
@@ -37,7 +38,7 @@ const [statusFilter, setStatusFilter] =
 
       const response =
         await fetch(
-          "https://pawresq-api.onrender.com/api/adoptions"
+          ENDPOINTS.ADOPTION_GET
         );
 
       const data =

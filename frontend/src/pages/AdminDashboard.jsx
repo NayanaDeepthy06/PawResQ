@@ -7,6 +7,7 @@ import {
 } from "react-icons/fa";
 
 import { useEffect, useState } from "react";
+import { ENDPOINTS } from "../config";
 
 function AdminDashboard() {
 
@@ -38,8 +39,7 @@ const [
 
       const response =
         await fetch(
-          "https://pawresq-api.onrender.com/api/admin/pending-ngos"
-        );
+          ENDPOINTS.ADMIN_PENDING_NGOS)
 
       const data =
         await response.json();
@@ -58,9 +58,8 @@ const [
 
     const response =
       await fetch(
-        "https://pawresq-api.onrender.com/api/admin/approved-ngos"
-      );
-
+        ENDPOINTS.ADMIN_APPROVED_NGOS
+      )
     const data =
       await response.json();
 
@@ -85,7 +84,7 @@ const [
 
       const response =
         await fetch(
-          `https://pawresq-api.onrender.com/api/admin/ngo/${ngoId}/approve`,
+          ENDPOINTS.ADMIN_APPROVE_NGO(ngoId),
           {
             method: "PATCH",
           }
@@ -115,9 +114,8 @@ const [
 
     const response =
       await fetch(
-        "https://pawresq-api.onrender.com/api/admin/pending-volunteers"
+        ENDPOINTS.ADMIN_PENDING_VOLUNTEERS
       );
-
     const data =
       await response.json();
 
@@ -143,9 +141,8 @@ async function fetchApprovedVolunteers() {
 
     const response =
       await fetch(
-        "https://pawresq-api.onrender.com/api/admin/approved-volunteers"
-      );
-
+        ENDPOINTS.ADMIN_APPROVED_VOLUNTEERS
+      )
     const data =
       await response.json();
 
@@ -174,7 +171,7 @@ async function approveVolunteer(
     const response =
       await fetch(
 
-        `https://pawresq-api.onrender.com/api/admin/approve-volunteer/${volunteerId}`,
+        ENDPOINTS.ADMIN_APPROVE_VOLUNTEER(volunteerId),
 
         {
           method: "PATCH",

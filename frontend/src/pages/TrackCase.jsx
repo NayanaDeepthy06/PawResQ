@@ -3,6 +3,7 @@ import {
   useState,
   useEffect
 } from "react";
+import { ENDPOINTS } from "../config";
 import "./Trackcase.css";
 import {
   FaSearch,
@@ -58,7 +59,7 @@ function TrackCase() {
 
       const response =
         await fetch(
-          `https://pawresq-api.onrender.com/api/reports/track/${trackingId}`
+          ENDPOINTS.REPORT_TRACK(trackingId)
         );
 
       const data =
@@ -125,7 +126,7 @@ async function fetchNearbyVolunteers(
 
     const response =
       await fetch(
-`https://pawresq-api.onrender.com/api/reports/${trackingId}/nearby-volunteers`
+        ENDPOINTS.REPORT_NEARBY_VOLUNTEERS(trackingId)
       );
 
     const data =

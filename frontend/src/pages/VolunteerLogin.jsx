@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./VolunteerLogin.css";
+import { ENDPOINTS } from "../config";
 
 function VolunteerLogin() {
 
@@ -21,7 +22,7 @@ function VolunteerLogin() {
 
       const response =
         await fetch(
-          "https://pawresq-api.onrender.com/api/volunteer/login",
+          ENDPOINTS.VOLUNTEER_LOGIN,
           {
             method: "POST",
 

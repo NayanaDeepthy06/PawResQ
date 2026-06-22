@@ -8,6 +8,7 @@ import {
 import "leaflet/dist/leaflet.css";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { ENDPOINTS } from "../config";
 import {
   FaEye,
   FaEyeSlash,
@@ -142,7 +143,7 @@ if (
   try {
     const response =
       await fetch(
-        "https://pawresq-api.onrender.com/api/ngo/register",
+        ENDPOINTS.NGO_REGISTER,
         {
           method: "POST",
 
@@ -202,7 +203,7 @@ async function handleLogin(
 
     const response =
       await fetch(
-        "https://pawresq-api.onrender.com/api/ngo/login",
+        ENDPOINTS.NGO_LOGIN,
         {
           method: "POST",
 

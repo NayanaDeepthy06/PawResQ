@@ -1,6 +1,7 @@
 import { useState } from "react";
 import "./VolunteerRegister.css";
 import VolunteerLocationPicker from "../components/VolunteerLocationPicker";
+import { ENDPOINTS } from "../config";
 function VolunteerRegister() {
 
   const [formData, setFormData] =
@@ -142,7 +143,7 @@ function VolunteerRegister() {
 
         const response =
           await fetch(
-            "https://pawresq-api.onrender.com/api/volunteer/register",
+            ENDPOINTS.VOLUNTEER_REGISTER,
             {
               method: "POST",
               body: data,

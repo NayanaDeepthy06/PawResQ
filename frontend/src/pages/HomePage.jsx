@@ -11,6 +11,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../App.css";
 import RescueMap from "../components/RescueMap";
+import { ENDPOINTS } from "../config";
 
 
 const features = [
@@ -308,7 +309,7 @@ if(report.image){
       }, 10000);
       
     const response = await fetch(
-      "https://pawresq-api.onrender.com/api/reports",
+      ENDPOINTS.REPORT_CREATE,
       {
         method: "POST",
        

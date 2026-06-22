@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import "./App.css";
 import RescueMap from "./components/RescueMap";
 import NGODashboard from "./components/NGODashboard";
+import { ENDPOINTS } from "./config";
 
 const features = [
   {
@@ -259,7 +260,7 @@ if(report.image){
         controller.abort();
       }, 10000);
     const response = await fetch(
-      "https://pawresq-api.onrender.com/api/reports",
+      ENDPOINTS.REPORT_CREATE,
       {
         method: "POST",
        

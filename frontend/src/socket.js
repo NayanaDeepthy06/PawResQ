@@ -1,7 +1,8 @@
 import { io } from "socket.io-client";
+import { ENDPOINTS } from "./config";
 
 const socket = io(
-  "https://pawresq-api.onrender.com"
+  ENDPOINTS.SOCKET_SERVER
 );
 
 export default socket;

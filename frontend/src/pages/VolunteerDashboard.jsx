@@ -1,6 +1,7 @@
 import socket from "../socket";
 import "./VolunteerDashboard.css";
 import { useEffect, useState } from "react";
+import { ENDPOINTS } from "../config";
 
 function VolunteerDashboard() {
 
@@ -67,7 +68,7 @@ function VolunteerDashboard() {
 
     const response =
       await fetch(
-        "https://pawresq-api.onrender.com/api/volunteer/escalated-cases"
+        ENDPOINTS.VOLUNTEER_ESCALATED_CASES
       );
 
     const data =
@@ -85,7 +86,7 @@ function VolunteerDashboard() {
 
     await fetch(
 
-      `https://pawresq-api.onrender.com/api/volunteer/accept-case/${reportId}`,
+      ENDPOINTS.VOLUNTEER_ACCEPT_CASE(reportId),
 
       {
         method: "PATCH",
@@ -122,7 +123,7 @@ function VolunteerDashboard() {
 
     await fetch(
 
-      `https://pawresq-api.onrender.com/api/volunteer/mark-rescued/${reportId}`,
+      ENDPOINTS.VOLUNTEER_MARK_RESCUED(reportId),
 
       {
         method: "PATCH",
